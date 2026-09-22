@@ -1,0 +1,45 @@
+<!--
+  Свёрнутый док: тонкая полоска у края или таблетка в свободном месте.
+  Окно ровно по размеру зоны, которая реагирует на мышь; всё, что не нарисовано, прозрачно.
+-->
+<Window x:Class="EdgeDock.DockWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="EdgeDock"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        Focusable="False"
+        AllowDrop="True"
+        Background="Transparent"
+        SizeToContent="Manual">
+
+    <!-- Прозрачный фон нужен, чтобы вся зона ловила мышь, а не только нарисованная черта. -->
+    <Grid x:Name="Root" Background="Transparent">
+
+        <!-- У края: черта по центру зоны. Ориентацию задаёт код. -->
+        <Grid x:Name="StripView">
+            <Border x:Name="StripBar" CornerRadius="{StaticResource Radius.Strip}" />
+            <!-- Акцентный слой для напоминания о встрече: проявляется через Opacity. -->
+            <Border x:Name="StripAttention" CornerRadius="{StaticResource Radius.Strip}"
+                    Background="{DynamicResource Brush.Accent}" Opacity="0" />
+        </Grid>
+
+        <!-- В свободном месте: таблетка с короткой чертой внутри. -->
+        <Border x:Name="PillView" Visibility="Collapsed"
+                CornerRadius="{StaticResource Radius.Pill}"
+                BorderThickness="1" BorderBrush="{DynamicResource Brush.Pill.Border}">
+            <Grid>
+                <Border x:Name="PillBar"
+                        Width="{StaticResource Strip.Thickness}" Height="{StaticResource Pill.BarLength}"
+                        CornerRadius="{StaticResource Radius.Strip}" />
+                <Border x:Name="PillAttention"
+                        Width="{StaticResource Strip.Thickness}" Height="{StaticResource Pill.BarLength}"
+                        CornerRadius="{StaticResource Radius.Strip}"
+                        Background="{DynamicResource Brush.Accent}" Opacity="0" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
