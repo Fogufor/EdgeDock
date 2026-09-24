@@ -1,10 +1,6 @@
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using System.Windows;
-using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using EdgeDock.Core;
 
@@ -68,28 +64,6 @@ internal static class Thumbnails
         image.EndInit();
         image.Freeze();
         return image;
-    }
-
-    /// <summary>Системный значок файла или папки. Только из потока интерфейса.</summary>
-    public static ImageSource? ShellIcon(string path, bool exists)
-    {
-        var info = new Native.SHFILEINFO();
-        uint flags = Native.SHGFI_ICON | Native.SHGFI_LARGEICON;
-        // Для исчезнувшего файла — значок по расширению.
-        if (!exists) flags |= Native.SHGFI_USEFILEATTRIBUTES;
-
-        Native.SHGetFileInfo(path, Native.FILE_ATTRIBUTE_NORMAL, ref info, (uint)Marshal.SizeOf(info), flags);
-        if (info.hIcon == IntPtr.Zero) return null;
-        try
-        {
-            var icon = Imaging.CreateBitmapSourceFromHIcon(info.hIcon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-            icon.Freeze();
-            return icon;
-        }
-        finally
-        {
-            Native.DestroyIcon(info.hIcon);
-        }
     }
 
     /// <summary>Удалить миниатюры, которые давно не пересоздавались. Вызывается при запуске, в фоне.</summary>

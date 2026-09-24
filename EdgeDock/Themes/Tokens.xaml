@@ -74,6 +74,8 @@
     <sys:Double x:Key="Indicator.Width">3</sys:Double>
     <sys:Double x:Key="Indicator.Height">16</sys:Double>
     <sys:Double x:Key="Chip.Height">24</sys:Double>
+    <!-- Микшер: ширина названия программы слева от её полоски громкости. -->
+    <sys:Double x:Key="Mixer.NameWidth">96</sys:Double>
     <Thickness x:Key="Inset.Chip">8,0,8,0</Thickness>
     <Thickness x:Key="Margin.Right.XS">0,0,4,0</Thickness>
     <!-- Окно установки. -->

@@ -50,6 +50,34 @@
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
+
+        <!-- Строка микшера: значок программы, название, громкость, «без звука». -->
+        <DataTemplate x:Key="AppRow" DataType="{x:Type local:AppVolume}">
+            <Grid Height="{StaticResource Device.RowHeight}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid Width="{StaticResource Shelf.IconSize}" Height="{StaticResource Shelf.IconSize}" Margin="{StaticResource Margin.Horizontal.S}">
+                    <!-- Нет значка (системные звуки, защищённый процесс) — значок динамика. -->
+                    <TextBlock Text="{StaticResource Glyph.Speaker}" FontFamily="{StaticResource Font.Icons}"
+                               FontSize="{StaticResource FontSize.IconLarge}" Foreground="{DynamicResource Brush.Text.Secondary}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Image Source="{Binding Icon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                </Grid>
+                <TextBlock Grid.Column="1" Text="{Binding Name}" ToolTip="{Binding Name}" Width="{StaticResource Mixer.NameWidth}"
+                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                <Slider Grid.Column="2" Margin="{StaticResource Margin.Horizontal.S}" VerticalAlignment="Center"
+                        Minimum="0" Maximum="100" SmallChange="1" LargeChange="10"
+                        Value="{Binding Level, Mode=TwoWay}"
+                        IsMoveToPointEnabled="True" AutoToolTipPlacement="TopLeft" AutoToolTipPrecision="0"
+                        Focusable="False" IsTabStop="False" PreviewMouseWheel="OnAppWheel" />
+                <ui:Button Grid.Column="3" Style="{StaticResource MediaButton}" Content="{Binding Glyph}"
+                           ToolTip="Включить или выключить звук программы" Click="OnAppMute" />
+            </Grid>
+        </DataTemplate>
     </UserControl.Resources>
 
     <Border Style="{StaticResource Card}">
@@ -109,6 +137,22 @@
                           Focusable="False" Margin="{StaticResource Margin.Top.S}" />
             <ItemsControl ItemsSource="{Binding Inputs}" ItemTemplate="{StaticResource DeviceRow}"
                           Focusable="False" Margin="{StaticResource Margin.Top.S}" />
+
+            <!-- Микшер: только программы, которые звучат прямо сейчас. Никто не звучит — раздела нет. -->
+            <StackPanel Margin="{StaticResource Margin.Top.M}">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Mixer.Apps.Count}" Value="0">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <TextBlock Text="Программы" Style="{StaticResource Caption}" />
+                <ItemsControl ItemsSource="{Binding Mixer.Apps}" ItemTemplate="{StaticResource AppRow}"
+                              Focusable="False" Margin="{StaticResource Margin.Top.S}" />
+            </StackPanel>
         </StackPanel>
     </Border>
 </UserControl>

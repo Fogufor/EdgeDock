@@ -53,12 +53,7 @@ public sealed class SystemVolume : INotifyPropertyChanged, IDisposable
     }
 
     /// <summary>Значок динамика по уровню громкости, как в Windows 11.</summary>
-    public string Glyph => (string)Application.Current.Resources[
-        IsMuted ? "Glyph.Mute"
-        : Level <= 0 ? "Glyph.Volume0"
-        : Level < 34 ? "Glyph.Volume1"
-        : Level < 67 ? "Glyph.Volume2"
-        : "Glyph.Volume3"];
+    public string Glyph => VolumeGlyphs.For(Level, IsMuted);
 
     public void ToggleMute()
     {

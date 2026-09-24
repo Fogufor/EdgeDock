@@ -71,7 +71,7 @@ internal sealed class Shelf
         item.IsMissing = !item.Exists;
         if (item.IsMissing || !Thumbnails.IsImage(item.Entry.Path))
         {
-            item.Icon = Thumbnails.ShellIcon(item.Entry.Path, exists: !item.IsMissing);
+            item.Icon = ShellIcons.Get(item.Entry.Path, exists: !item.IsMissing);
             return;
         }
 

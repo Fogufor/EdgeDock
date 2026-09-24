@@ -63,9 +63,13 @@ internal sealed class AudioModule : IDockModule, IDisposable
     public ObservableCollection<DeviceItem> Inputs { get; } = [];
     public AudioState State { get; } = new();
 
+    /// <summary>Громкость программ, которые звучат прямо сейчас.</summary>
+    public AppMixer Mixer { get; }
+
     public AudioModule(SettingsService settings)
     {
         _settings = settings;
+        Mixer = new AppMixer(_ui);
         _devices.Changed += ScheduleRefresh;
         var audio = settings.Settings.Audio;
         State.HasFavorites = audio.FavoriteOutputs.Count + audio.FavoriteInputs.Count > 0;
@@ -88,6 +92,7 @@ internal sealed class AudioModule : IDockModule, IDisposable
     {
         _expanded = true;
         _devices.Watch();
+        Mixer.Attach();
         Refresh();
     }
 
@@ -95,13 +100,20 @@ internal sealed class AudioModule : IDockModule, IDisposable
     {
         _expanded = false;
         _devices.StopWatching();
+        Mixer.Detach();
     }
 
-    public void Suspend() => _devices.StopWatching();
+    public void Suspend()
+    {
+        _devices.StopWatching();
+        Mixer.Detach();
+    }
 
     public void Resume()
     {
-        if (_expanded) _devices.Watch();
+        if (!_expanded) return;
+        _devices.Watch();
+        Mixer.Attach();
     }
 
     /// <summary>Клик по устройству: сделать его устройством по умолчанию для всех ролей.</summary>
@@ -203,5 +215,9 @@ internal sealed class AudioModule : IDockModule, IDisposable
         }
     }
 
-    public void Dispose() => _devices.Dispose();
+    public void Dispose()
+    {
+        _devices.Dispose();
+        Mixer.Dispose();
+    }
 }
