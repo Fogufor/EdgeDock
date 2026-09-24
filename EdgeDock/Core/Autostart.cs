@@ -33,7 +33,8 @@ internal static class Autostart
         }
     }
 
-    private static void CreateShortcut(string path, string target)
+    /// <summary>Ярлык .lnk на target (им же пользуется установщик для меню «Пуск»).</summary>
+    public static void CreateShortcut(string path, string target)
     {
         var shellType = Type.GetTypeFromProgID("WScript.Shell") ?? throw new InvalidOperationException("WScript.Shell недоступен.");
         dynamic shell = Activator.CreateInstance(shellType)!;

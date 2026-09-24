@@ -1,16 +1,11 @@
-﻿# Собирает рабочую копию EdgeDock в %LocalAppData%\Programs\EdgeDock.
-# Ярлык автозапуска указывает туда (отладочные сборки из bin\ автозапуск не трогают).
-# Запуск:  powershell -ExecutionPolicy Bypass -File publish.ps1
+﻿# Собирает EdgeDock.exe — один файл со всем .NET внутри — в папку artifacts и открывает окно установки.
+# Нужен .NET 10 SDK. Запуск:  powershell -ExecutionPolicy Bypass -File publish.ps1
 
 $ErrorActionPreference = 'Stop'
-$target = Join-Path $env:LOCALAPPDATA 'Programs\EdgeDock'
+$out = Join-Path $PSScriptRoot 'artifacts'
 
-# Запущенный виджет держит exe — закрываем его перед заменой.
-Get-Process EdgeDock -ErrorAction SilentlyContinue | Stop-Process
-Start-Sleep -Milliseconds 500
-
-dotnet publish "$PSScriptRoot\EdgeDock\EdgeDock.csproj" -c Release -r win-x64 --self-contained false -o $target
+dotnet publish "$PSScriptRoot\EdgeDock\EdgeDock.csproj" -c Release -r win-x64 -o $out
 if ($LASTEXITCODE -ne 0) { throw 'Сборка не удалась.' }
 
-Start-Process (Join-Path $target 'EdgeDock.exe')
-Write-Host "Готово: $target"
+Start-Process (Join-Path $out 'EdgeDock.exe')
+Write-Host "Готово: $out\EdgeDock.exe"

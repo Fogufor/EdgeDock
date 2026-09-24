@@ -81,6 +81,7 @@ public static class Native
     public const int DWMWA_SYSTEMBACKDROP_TYPE = 38;
     public const int DWMWCP_DONOTROUND = 1;
     public const int DWMWCP_ROUND = 2;
+    public const int DWMSBT_MAINWINDOW = 2;      // Mica
     public const int DWMSBT_TRANSIENTWINDOW = 3; // акрил
     public const int DWMWA_COLOR_NONE = unchecked((int)0xFFFFFFFE);
 

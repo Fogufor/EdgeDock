@@ -76,12 +76,19 @@
     <sys:Double x:Key="Chip.Height">24</sys:Double>
     <Thickness x:Key="Inset.Chip">8,0,8,0</Thickness>
     <Thickness x:Key="Margin.Right.XS">0,0,4,0</Thickness>
+    <!-- Окно установки. -->
+    <sys:Double x:Key="Setup.Width">520</sys:Double>
+    <Thickness x:Key="Inset.Setup">24,16,24,24</Thickness>
+    <Thickness x:Key="Inset.CardLarge">16</Thickness>
+    <Thickness x:Key="Margin.Top.L">0,24,0,0</Thickness>
+    <Thickness x:Key="Margin.Left.S">8,0,0,0</Thickness>
 
     <!-- ===== Шрифты и иконки ===== -->
     <FontFamily x:Key="Font.Text">Segoe UI Variable Text, Segoe UI</FontFamily>
     <FontFamily x:Key="Font.Icons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
     <sys:Double x:Key="FontSize.Body">14</sys:Double>
     <sys:Double x:Key="FontSize.Caption">12</sys:Double>
+    <sys:Double x:Key="FontSize.Title">20</sys:Double>
     <sys:Double x:Key="FontSize.Icon">12</sys:Double>
     <sys:Double x:Key="FontSize.IconLarge">16</sys:Double>
     <sys:String x:Key="Glyph.Tray">&#xE90D;</sys:String>
@@ -134,6 +141,10 @@
     <Color x:Key="Dark.Button.Border">#12FFFFFF</Color>
     <!-- Текст на акцентной заливке. -->
     <Color x:Key="Dark.Text.OnAccent">#FF000000</Color>
+    <!-- Ошибка (окно установки). -->
+    <Color x:Key="Dark.Text.Critical">#FFFF99A4</Color>
+    <!-- Фон окна установки, если Mica недоступна. -->
+    <Color x:Key="Dark.Window.Fallback">#FF202020</Color>
 
     <!-- ===== Цвета: светлая тема ===== -->
     <Color x:Key="Light.Text.Primary">#E4000000</Color>
@@ -162,6 +173,8 @@
     <Color x:Key="Light.Button.Pressed">#4DF9F9F9</Color>
     <Color x:Key="Light.Button.Border">#0F000000</Color>
     <Color x:Key="Light.Text.OnAccent">#FFFFFFFF</Color>
+    <Color x:Key="Light.Text.Critical">#FFC42B1C</Color>
+    <Color x:Key="Light.Window.Fallback">#FFF3F3F3</Color>
 
     <!-- ===== Цвета иконки в трее (следуют теме панели задач, а не теме приложений) ===== -->
     <Color x:Key="Tray.Glyph.OnDark">#FFFFFFFF</Color>

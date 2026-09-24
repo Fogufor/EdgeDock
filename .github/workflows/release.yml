@@ -1,0 +1,34 @@
+# Выпуск версии: при отправке тега вида v1.2.3 GitHub собирает EdgeDock.exe
+# (один файл со всем .NET внутри) и выкладывает его на страницу Releases.
+#   git tag v1.0.0
+#   git push origin v1.0.0
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Сборка EdgeDock.exe
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          dotnet publish EdgeDock/EdgeDock.csproj -c Release -r win-x64 -o out -p:Version=$version
+
+      - name: Релиз
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/EdgeDock.exe
+          generate_release_notes: true

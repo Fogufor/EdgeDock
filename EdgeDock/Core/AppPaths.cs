@@ -12,6 +12,9 @@ internal static class AppPaths
     public static string StateFile { get; } = Path.Combine(Root, "state.json");
     public static string Logs { get; } = Path.Combine(Root, "logs");
 
+    /// <summary>Куда установлен виджет (пишет окно установки).</summary>
+    public static string InstallInfo { get; } = Path.Combine(Root, "install.json");
+
     /// <summary>Миниатюры превью (маленькие PNG), чтобы не декодировать снимки заново.</summary>
     public static string Cache { get; } = Path.Combine(Root, "cache");
 

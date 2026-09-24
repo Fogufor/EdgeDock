@@ -1,0 +1,77 @@
+<!--
+  Окно установки. Шаг 1 — папка и галочки, шаг 2 — «готово» и помощник для расширения Яндекс Браузера.
+  Обычное окно Windows 11: фон Mica (включает код), элементы управления — WPF UI.
+-->
+<Window x:Class="EdgeDock.Setup.SetupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="Установка EdgeDock"
+        Width="{StaticResource Setup.Width}"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        FontFamily="{StaticResource Font.Text}"
+        FontSize="{StaticResource FontSize.Body}"
+        Foreground="{DynamicResource Brush.Text.Primary}"
+        TextOptions.TextFormattingMode="Display">
+
+    <Grid x:Name="Root">
+        <!-- ===== Шаг 1: установка ===== -->
+        <StackPanel x:Name="InstallPage" Margin="{StaticResource Inset.Setup}">
+            <TextBlock Text="EdgeDock" FontSize="{StaticResource FontSize.Title}" FontWeight="SemiBold" />
+            <TextBlock x:Name="VersionText" Style="{StaticResource Caption}" />
+            <TextBlock Margin="{StaticResource Margin.Top.S}" TextWrapping="Wrap" Foreground="{DynamicResource Brush.Text.Secondary}"
+                       Text="Тонкая полоска у края экрана: при наведении раскрывается панель со скриншотами, полкой файлов, музыкой и переключением звука." />
+
+            <TextBlock Text="Папка установки" Margin="{StaticResource Margin.Top.L}" />
+            <Grid Margin="{StaticResource Margin.Top.S}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="FolderBox" VerticalContentAlignment="Center" />
+                <ui:Button Grid.Column="1" Content="Обзор…" Margin="{StaticResource Margin.Left.S}" Click="OnBrowse" />
+            </Grid>
+
+            <CheckBox x:Name="AutostartBox" Content="Запускать вместе с Windows" IsChecked="True" Margin="{StaticResource Margin.Top.M}" />
+            <CheckBox x:Name="StartMenuBox" Content="Ярлык в меню «Пуск»" IsChecked="True" Margin="{StaticResource Margin.Top.S}" />
+
+            <TextBlock x:Name="ErrorText" Margin="{StaticResource Margin.Top.M}" TextWrapping="Wrap"
+                       Foreground="{DynamicResource Brush.Text.Critical}" Visibility="Collapsed" />
+
+            <ui:Button x:Name="InstallButton" Content="Установить и запустить" Appearance="Primary"
+                       HorizontalAlignment="Right" Margin="{StaticResource Margin.Top.L}" Click="OnInstall" />
+        </StackPanel>
+
+        <!-- ===== Шаг 2: готово + расширение для Яндекс Браузера ===== -->
+        <StackPanel x:Name="DonePage" Margin="{StaticResource Inset.Setup}" Visibility="Collapsed">
+            <TextBlock Text="Готово" FontSize="{StaticResource FontSize.Title}" FontWeight="SemiBold" />
+            <TextBlock Margin="{StaticResource Margin.Top.S}" TextWrapping="Wrap" Foreground="{DynamicResource Brush.Text.Secondary}"
+                       Text="EdgeDock запущен: тонкая полоска у верхнего края экрана. Наведите на неё мышь — откроется панель. Иконка виджета — в трее, под стрелкой «^»." />
+
+            <Border Style="{StaticResource Card}" Padding="{StaticResource Inset.CardLarge}" Margin="{StaticResource Margin.Top.L}">
+                <StackPanel>
+                    <TextBlock Text="Музыка из Яндекс Браузера — по желанию" FontWeight="SemiBold" />
+                    <TextBlock Margin="{StaticResource Margin.Top.S}" TextWrapping="Wrap" Foreground="{DynamicResource Brush.Text.Secondary}"
+                               Text="Яндекс Браузер не сообщает Windows, что в нём играет, поэтому виджету нужно небольшое расширение. Это полминуты:" />
+                    <TextBlock Margin="{StaticResource Margin.Top.S}" TextWrapping="Wrap"
+                               Text="1. Нажмите «Открыть страницу расширений» — путь к расширению скопируется сам." />
+                    <TextBlock Margin="{StaticResource Margin.Top.S}" TextWrapping="Wrap"
+                               Text="2. Включите «Режим разработчика» вверху страницы." />
+                    <TextBlock Margin="{StaticResource Margin.Top.S}" TextWrapping="Wrap"
+                               Text="3. Нажмите «Загрузить распакованное расширение», вставьте путь (Ctrl+V) в строку адреса окна и нажмите «Выбор папки»." />
+                    <TextBlock Margin="{StaticResource Margin.Top.S}" TextWrapping="Wrap"
+                               Text="4. Обновите вкладку Яндекс Музыки (F5)." />
+                    <ui:Button Content="Открыть страницу расширений" Margin="{StaticResource Margin.Top.M}" Click="OnOpenExtensions" />
+                    <TextBlock x:Name="ExtensionHint" Style="{StaticResource Caption}" Margin="{StaticResource Margin.Top.S}"
+                               TextWrapping="Wrap" Visibility="Collapsed" />
+                </StackPanel>
+            </Border>
+
+            <ui:Button Content="Готово" Appearance="Primary" HorizontalAlignment="Right"
+                       Margin="{StaticResource Margin.Top.L}" Click="OnDone" />
+        </StackPanel>
+    </Grid>
+</Window>
