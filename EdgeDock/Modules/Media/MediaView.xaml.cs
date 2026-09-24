@@ -27,6 +27,13 @@ public partial class MediaView : UserControl
 
     private void OnMute(object sender, RoutedEventArgs e) => _module.Volume.ToggleMute();
 
+    private void OnLike(object sender, RoutedEventArgs e) => _module.ToggleLike();
+
+    // Перемотка: пока ползунок держат, секундомер его не двигает; отпустили — перематываем туда.
+    private void OnSeekStart(object sender, MouseButtonEventArgs e) => _module.BeginSeek();
+
+    private void OnSeekEnd(object sender, MouseButtonEventArgs e) => _module.Seek(((Slider)sender).Value);
+
     private void OnVolumeWheel(object sender, MouseWheelEventArgs e)
     {
         _module.Volume.Level += Math.Sign(e.Delta) * WheelStep;

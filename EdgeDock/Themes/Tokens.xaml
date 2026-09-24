@@ -104,6 +104,8 @@
     <sys:String x:Key="Glyph.Speaker">&#xE767;</sys:String>
     <sys:String x:Key="Glyph.Microphone">&#xE720;</sys:String>
     <sys:String x:Key="Glyph.Phone">&#xE717;</sys:String>
+    <sys:String x:Key="Glyph.Heart">&#xE006;</sys:String>
+    <sys:String x:Key="Glyph.HeartFill">&#xE00B;</sys:String>
     <sys:String x:Key="Glyph.Mute">&#xE74F;</sys:String>
     <sys:String x:Key="Glyph.Volume0">&#xE992;</sys:String>
     <sys:String x:Key="Glyph.Volume1">&#xE993;</sys:String>

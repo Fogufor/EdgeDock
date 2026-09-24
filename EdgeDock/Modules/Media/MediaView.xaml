@@ -46,6 +46,25 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- «Нравится» — только для Яндекс Музыки; лайк сохраняется в аккаунте. -->
+                    <ui:Button Click="OnLike">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource MediaButton}">
+                                <Setter Property="Content" Value="{StaticResource Glyph.Heart}" />
+                                <Setter Property="ToolTip" Value="Нравится" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsLiked}" Value="True">
+                                        <Setter Property="Content" Value="{StaticResource Glyph.HeartFill}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}" />
+                                        <Setter Property="ToolTip" Value="Убрать из «Мне нравится»" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding CanLike}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
                     <ui:Button Style="{StaticResource MediaButton}" Content="{StaticResource Glyph.Previous}"
                                ToolTip="Назад" IsEnabled="{Binding CanPrevious}" Click="OnPrevious" />
                     <ui:Button IsEnabled="{Binding CanPlayPause}" Click="OnPlayPause">
@@ -65,6 +84,33 @@
                     <ui:Button Style="{StaticResource MediaButton}" Content="{StaticResource Glyph.Next}"
                                ToolTip="Вперёд" IsEnabled="{Binding CanNext}" Click="OnNext" />
                 </StackPanel>
+            </Grid>
+
+            <!-- Время трека: сколько прошло, полоска перемотки, сколько осталось. Плеер не сообщает длину — строки нет. -->
+            <Grid Margin="{StaticResource Margin.Top.S}">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasTimeline}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding ElapsedText}" Style="{StaticResource Caption}" VerticalAlignment="Center"
+                           Typography.NumeralAlignment="Tabular" />
+                <Slider Grid.Column="1" Margin="{StaticResource Margin.Horizontal.S}" VerticalAlignment="Center"
+                        Minimum="0" Maximum="{Binding Duration}" Value="{Binding Position, Mode=TwoWay}"
+                        IsEnabled="{Binding CanSeek}" IsMoveToPointEnabled="True"
+                        Focusable="False" IsTabStop="False"
+                        PreviewMouseLeftButtonDown="OnSeekStart" PreviewMouseLeftButtonUp="OnSeekEnd" />
+                <TextBlock Grid.Column="2" Text="{Binding RemainingText}" Style="{StaticResource Caption}" VerticalAlignment="Center"
+                           Typography.NumeralAlignment="Tabular" />
             </Grid>
 
             <!-- Общая громкость Windows: значок включает и выключает звук, полоска — уровень, колесо мыши — по 2%. -->

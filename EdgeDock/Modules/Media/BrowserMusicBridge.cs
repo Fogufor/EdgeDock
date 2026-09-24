@@ -28,8 +28,10 @@ internal sealed class BrowserMusicBridge : IDisposable
     private const int MaxMessageBytes = 512 * 1024; // обложка может прийти data:-адресом
     private static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(5);
 
+    /// <summary>Трек из Яндекс Музыки. Position — в секундах на момент PositionAt (мс от 1970 г., часы этого же компьютера).</summary>
     public sealed record Track(string Title, string Artist, string Artwork, bool Playing,
-        bool CanPrevious, bool CanPlayPause, bool CanNext);
+        bool CanPrevious, bool CanPlayPause, bool CanNext,
+        double Position, double Duration, long PositionAt, bool CanSeek, bool Liked, bool CanLike);
 
     private readonly Dispatcher _ui;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
@@ -70,12 +72,12 @@ internal sealed class BrowserMusicBridge : IDisposable
         Raise(null);
     }
 
-    /// <summary>Кнопка из виджета: "previous", "playPause" или "next".</summary>
-    public async void Send(string command)
+    /// <summary>Команда из виджета: "previous", "playPause", "next", "like" или "seek" (с позицией в секундах).</summary>
+    public async void Send(string command, double position = 0)
     {
         var socket = _socket;
         if (socket?.State != WebSocketState.Open) return;
-        byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(new { type = "command", command });
+        byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(new { type = "command", command, position });
         await _sendLock.WaitAsync();
         try
         {
@@ -224,7 +226,9 @@ internal sealed class BrowserMusicBridge : IDisposable
                     break;
                 case "state":
                     var track = new Track(Text(root, "title"), Text(root, "artist"), Text(root, "artwork"),
-                        Flag(root, "playing"), Flag(root, "canPrevious"), Flag(root, "canPlayPause"), Flag(root, "canNext"));
+                        Flag(root, "playing"), Flag(root, "canPrevious"), Flag(root, "canPlayPause"), Flag(root, "canNext"),
+                        Number(root, "position"), Number(root, "duration"), (long)Number(root, "positionAt"),
+                        Flag(root, "canSeek"), Flag(root, "liked"), Flag(root, "canLike"));
                     Raise(track.Title.Length > 0 ? track : null);
                     break;
             }
@@ -240,6 +244,11 @@ internal sealed class BrowserMusicBridge : IDisposable
 
     private static bool Flag(JsonElement root, string name) =>
         root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.True;
+
+    private static double Number(JsonElement root, string name) =>
+        root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out double number)
+            ? number
+            : 0;
 
     private void Raise(Track? track) => _ui.BeginInvoke(() => Changed?.Invoke(track));
 

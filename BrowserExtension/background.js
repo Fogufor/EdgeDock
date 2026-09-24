@@ -1,6 +1,6 @@
 // EdgeDock, фоновый скрипт.
 // Собирает состояние со всех вкладок Яндекс Музыки, выбирает ту, что играет (или играла последней),
-// и передаёт её виджету по WebSocket на 127.0.0.1. Обратно получает кнопки плеера.
+// и передаёт её виджету по WebSocket на 127.0.0.1. Обратно получает кнопки, перемотку и лайк.
 'use strict';
 
 const WIDGET_URL = 'ws://127.0.0.1:48620/'; // порт должен совпадать с BrowserMusicBridge.Port в виджете
@@ -8,7 +8,7 @@ const RETRY_MS = 10000;                     // виджет не запущен 
 
 const tabs = new Map(); // id вкладки → { state, playedAt }
 let socket = null;
-let lastForwarded = null;
+let lastKey = null;     // что последним ушло виджету (без позиции — её виджет досчитывает сам)
 let lastAttempt = 0;
 
 chrome.runtime.onMessage.addListener((message, sender) => {
@@ -17,11 +17,11 @@ chrome.runtime.onMessage.addListener((message, sender) => {
   entry.state = message.state;
   if (message.state && message.state.playing) entry.playedAt = Date.now();
   tabs.set(sender.tab.id, entry);
-  sync();
+  sync(message.moved === true);
 });
 
 chrome.tabs.onRemoved.addListener(tabId => {
-  if (tabs.delete(tabId)) sync();
+  if (tabs.delete(tabId)) sync(true);
 });
 
 // Вкладка, которая играет; если ни одна не играет — та, что играла последней.
@@ -35,17 +35,20 @@ function current() {
   return best;
 }
 
-function sync() {
+// moved — позиция скачком поменялась (перемотка, пауза, новый трек): отправить, даже если остальное то же.
+function sync(moved) {
   const best = current();
   if (!best && !socket) return; // нечего сообщать, а виджет и так ничего не знает
 
   connect();
   if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
-  const payload = JSON.stringify(best ? { type: 'state', ...best.entry.state } : { type: 'none' });
-  if (payload === lastForwarded) return; // виджету отправляем только изменения
-  socket.send(payload);
-  lastForwarded = payload;
+  const state = best ? best.entry.state : null;
+  const { position, positionAt, ...rest } = state || {};
+  const key = JSON.stringify({ tab: best && best.id, ...rest });
+  if (key === lastKey && !moved) return; // виджету отправляем только изменения
+  socket.send(JSON.stringify(state ? { type: 'state', ...state } : { type: 'none' }));
+  lastKey = key;
 }
 
 function connect() {
@@ -55,8 +58,8 @@ function connect() {
   const ws = new WebSocket(WIDGET_URL);
   socket = ws;
   ws.onopen = () => {
-    lastForwarded = null;
-    sync();
+    lastKey = null;
+    sync(true);
   };
   // Виджет не запущен или закрылся — попробуем снова при следующем сообщении от вкладки.
   ws.onerror = () => {};
@@ -72,7 +75,7 @@ function connect() {
     }
     const best = current();
     if (message.type === 'command' && best) {
-      chrome.tabs.sendMessage(best.id, { type: 'command', command: message.command }).catch(() => {});
+      chrome.tabs.sendMessage(best.id, { type: 'command', command: message.command, position: message.position }).catch(() => {});
     }
   };
 }
