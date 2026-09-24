@@ -83,8 +83,12 @@ internal sealed class MediaModule : IDockModule, IDisposable
 
     public MediaState State { get; } = new();
 
+    /// <summary>Общая громкость Windows — полоска под треком.</summary>
+    public SystemVolume Volume { get; }
+
     public MediaModule()
     {
+        Volume = new SystemVolume(_ui);
         _browser = new BrowserMusicBridge(_ui);
         _browser.Changed += track =>
         {
@@ -110,19 +114,22 @@ internal sealed class MediaModule : IDockModule, IDisposable
     public void OnExpanded()
     {
         _expanded = true;
+        Volume.Attach();
         _ = LoadCoverAsync(++_coverVersion);
     }
 
-    /// <summary>Панель свернулась — обложка выгружается.</summary>
+    /// <summary>Панель свернулась — обложка выгружается, громкость отключается от устройства.</summary>
     public void OnCollapsed()
     {
         _expanded = false;
         State.Cover = null;
+        Volume.Detach();
     }
 
     public void Suspend()
     {
         _suspended = true;
+        Volume.Detach();
         if (_manager != null) _manager.CurrentSessionChanged -= OnCurrentSessionChanged;
         AttachSession(null);
         _browser.Stop();
@@ -349,5 +356,6 @@ internal sealed class MediaModule : IDockModule, IDisposable
         if (_manager != null) _manager.CurrentSessionChanged -= OnCurrentSessionChanged;
         AttachSession(null);
         _browser.Dispose();
+        Volume.Dispose();
     }
 }

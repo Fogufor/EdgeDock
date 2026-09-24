@@ -1,4 +1,7 @@
-<!-- Музыка: обложка, название, исполнитель, кнопки. Нет медиа-сессии — блок скрыт целиком. -->
+<!--
+  Музыка: обложка, название, исполнитель, кнопки и общая громкость Windows.
+  Нет медиа-сессии — блок скрыт целиком (вместе с полоской громкости).
+-->
 <UserControl x:Class="EdgeDock.Modules.Media.MediaView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -15,52 +18,78 @@
     </UserControl.Style>
 
     <Border Style="{StaticResource Card}">
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+        <StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-            <!-- Обложка; пока её нет — нейтральная плашка со значком ноты. -->
-            <Grid Width="{StaticResource Media.CoverSize}" Height="{StaticResource Media.CoverSize}">
-                <Border CornerRadius="{StaticResource Radius.Small}" Background="{DynamicResource Brush.Thumb.Placeholder}">
-                    <TextBlock Text="{StaticResource Glyph.Music}" FontFamily="{StaticResource Font.Icons}"
-                               FontSize="{StaticResource FontSize.IconLarge}" Foreground="{DynamicResource Brush.Text.Tertiary}"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <Border CornerRadius="{StaticResource Radius.Small}" RenderOptions.BitmapScalingMode="HighQuality">
-                    <Border.Background>
-                        <ImageBrush ImageSource="{Binding Cover}" Stretch="UniformToFill" />
-                    </Border.Background>
-                </Border>
+                <!-- Обложка; пока её нет — нейтральная плашка со значком ноты. -->
+                <Grid Width="{StaticResource Media.CoverSize}" Height="{StaticResource Media.CoverSize}">
+                    <Border CornerRadius="{StaticResource Radius.Small}" Background="{DynamicResource Brush.Thumb.Placeholder}">
+                        <TextBlock Text="{StaticResource Glyph.Music}" FontFamily="{StaticResource Font.Icons}"
+                                   FontSize="{StaticResource FontSize.IconLarge}" Foreground="{DynamicResource Brush.Text.Tertiary}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <Border CornerRadius="{StaticResource Radius.Small}" RenderOptions.BitmapScalingMode="HighQuality">
+                        <Border.Background>
+                            <ImageBrush ImageSource="{Binding Cover}" Stretch="UniformToFill" />
+                        </Border.Background>
+                    </Border>
+                </Grid>
+
+                <StackPanel Grid.Column="1" Margin="{StaticResource Margin.Horizontal.S}" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Artist}" Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ui:Button Style="{StaticResource MediaButton}" Content="{StaticResource Glyph.Previous}"
+                               ToolTip="Назад" IsEnabled="{Binding CanPrevious}" Click="OnPrevious" />
+                    <ui:Button IsEnabled="{Binding CanPlayPause}" Click="OnPlayPause">
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource MediaButton}">
+                                <Setter Property="Content" Value="{StaticResource Glyph.Play}" />
+                                <Setter Property="ToolTip" Value="Играть" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                        <Setter Property="Content" Value="{StaticResource Glyph.Pause}" />
+                                        <Setter Property="ToolTip" Value="Пауза" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                    </ui:Button>
+                    <ui:Button Style="{StaticResource MediaButton}" Content="{StaticResource Glyph.Next}"
+                               ToolTip="Вперёд" IsEnabled="{Binding CanNext}" Click="OnNext" />
+                </StackPanel>
             </Grid>
 
-            <StackPanel Grid.Column="1" Margin="{StaticResource Margin.Horizontal.S}" VerticalAlignment="Center">
-                <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                <TextBlock Text="{Binding Artist}" Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-
-            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                <ui:Button Style="{StaticResource MediaButton}" Content="{StaticResource Glyph.Previous}"
-                           ToolTip="Назад" IsEnabled="{Binding CanPrevious}" Click="OnPrevious" />
-                <ui:Button IsEnabled="{Binding CanPlayPause}" Click="OnPlayPause">
-                    <ui:Button.Style>
-                        <Style TargetType="ui:Button" BasedOn="{StaticResource MediaButton}">
-                            <Setter Property="Content" Value="{StaticResource Glyph.Play}" />
-                            <Setter Property="ToolTip" Value="Играть" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsPlaying}" Value="True">
-                                    <Setter Property="Content" Value="{StaticResource Glyph.Pause}" />
-                                    <Setter Property="ToolTip" Value="Пауза" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ui:Button.Style>
-                </ui:Button>
-                <ui:Button Style="{StaticResource MediaButton}" Content="{StaticResource Glyph.Next}"
-                           ToolTip="Вперёд" IsEnabled="{Binding CanNext}" Click="OnNext" />
-            </StackPanel>
-        </Grid>
+            <!-- Общая громкость Windows: значок включает и выключает звук, полоска — уровень, колесо мыши — по 2%. -->
+            <Grid x:Name="VolumeRow" Margin="{StaticResource Margin.Top.S}">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ui:Button Style="{StaticResource MediaButton}" Content="{Binding Glyph}"
+                           ToolTip="Включить или выключить звук" Click="OnMute" />
+                <Slider Grid.Column="1" Margin="{StaticResource Margin.Horizontal.S}" VerticalAlignment="Center"
+                        Minimum="0" Maximum="100" SmallChange="1" LargeChange="10"
+                        Value="{Binding Level, Mode=TwoWay}"
+                        IsMoveToPointEnabled="True" AutoToolTipPlacement="TopLeft" AutoToolTipPrecision="0"
+                        Focusable="False" IsTabStop="False" PreviewMouseWheel="OnVolumeWheel" />
+            </Grid>
+        </StackPanel>
     </Border>
 </UserControl>

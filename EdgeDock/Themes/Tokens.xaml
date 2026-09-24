@@ -95,6 +95,11 @@
     <sys:String x:Key="Glyph.Speaker">&#xE767;</sys:String>
     <sys:String x:Key="Glyph.Microphone">&#xE720;</sys:String>
     <sys:String x:Key="Glyph.Phone">&#xE717;</sys:String>
+    <sys:String x:Key="Glyph.Mute">&#xE74F;</sys:String>
+    <sys:String x:Key="Glyph.Volume0">&#xE992;</sys:String>
+    <sys:String x:Key="Glyph.Volume1">&#xE993;</sys:String>
+    <sys:String x:Key="Glyph.Volume2">&#xE994;</sys:String>
+    <sys:String x:Key="Glyph.Volume3">&#xE995;</sys:String>
 
     <!-- ===== Цвета: тёмная тема ===== -->
     <Color x:Key="Dark.Text.Primary">#FFFFFFFF</Color>
