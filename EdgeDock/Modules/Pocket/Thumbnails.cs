@@ -27,7 +27,7 @@ internal static class Thumbnails
         ImageExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Миниатюра картинки (можно вызывать из фонового потока). null — файл не читается.</summary>
-    public static BitmapSource? Get(string path)
+    public static BitmapSource? Get(string path, bool logErrors = true)
     {
         try
         {
@@ -50,7 +50,7 @@ internal static class Thumbnails
         }
         catch (Exception ex)
         {
-            Log.Error($"Не удалось сделать миниатюру: {path}", ex);
+            if (logErrors) Log.Error($"Не удалось сделать миниатюру: {path}", ex);
             return null;
         }
     }

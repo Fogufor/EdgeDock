@@ -59,6 +59,8 @@ internal static class ThemeService
         }
         resources["Color.Accent"] = accent;
         resources["Brush.Accent"] = Frozen(accent);
+        resources["Brush.Accent.Hover"] = Frozen(WithOpacity(accent, (double)tokens["Opacity.AccentHover"]));
+        resources["Brush.Accent.Pressed"] = Frozen(WithOpacity(accent, (double)tokens["Opacity.AccentPressed"]));
 
         // Словарь темы WPF UI меняем сами: её ApplicationThemeManager заодно перекрашивает фон
         // главного окна приложения, а у нас это прозрачная полоска дока.
@@ -99,6 +101,9 @@ internal static class ThemeService
 
     private static int ReadDword(string key, string name, int fallback) =>
         Registry.GetValue(key, name, fallback) is int value ? value : fallback;
+
+    private static Color WithOpacity(Color color, double opacity) =>
+        System.Windows.Media.Color.FromArgb((byte)Math.Round(opacity * 255), color.R, color.G, color.B);
 
     private static SolidColorBrush Frozen(Color color)
     {

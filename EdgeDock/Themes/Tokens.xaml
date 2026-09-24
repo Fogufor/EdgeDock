@@ -64,6 +64,18 @@
     <sys:Double x:Key="Opacity.Selection">0.2</sys:Double>
     <sys:Double x:Key="Opacity.Missing">0.5</sys:Double>
     <sys:Double x:Key="Opacity.Pressed">0.85</sys:Double>
+    <!-- Акцентная заливка при наведении и нажатии (ThemeService делает из них Brush.Accent.Hover/Pressed). -->
+    <sys:Double x:Key="Opacity.AccentHover">0.9</sys:Double>
+    <sys:Double x:Key="Opacity.AccentPressed">0.8</sys:Double>
+    <!-- Музыка и звук. -->
+    <sys:Double x:Key="Media.CoverSize">48</sys:Double>
+    <sys:Double x:Key="MediaButton.Size">32</sys:Double>
+    <sys:Double x:Key="Device.RowHeight">32</sys:Double>
+    <sys:Double x:Key="Indicator.Width">3</sys:Double>
+    <sys:Double x:Key="Indicator.Height">16</sys:Double>
+    <sys:Double x:Key="Chip.Height">24</sys:Double>
+    <Thickness x:Key="Inset.Chip">8,0,8,0</Thickness>
+    <Thickness x:Key="Margin.Right.XS">0,0,4,0</Thickness>
 
     <!-- ===== Шрифты и иконки ===== -->
     <FontFamily x:Key="Font.Text">Segoe UI Variable Text, Segoe UI</FontFamily>
@@ -71,9 +83,18 @@
     <sys:Double x:Key="FontSize.Body">14</sys:Double>
     <sys:Double x:Key="FontSize.Caption">12</sys:Double>
     <sys:Double x:Key="FontSize.Icon">12</sys:Double>
+    <sys:Double x:Key="FontSize.IconLarge">16</sys:Double>
     <sys:String x:Key="Glyph.Tray">&#xE90D;</sys:String>
     <sys:String x:Key="Glyph.Folder">&#xE838;</sys:String>
     <sys:String x:Key="Glyph.Close">&#xE711;</sys:String>
+    <sys:String x:Key="Glyph.Previous">&#xE892;</sys:String>
+    <sys:String x:Key="Glyph.Next">&#xE893;</sys:String>
+    <sys:String x:Key="Glyph.Play">&#xE768;</sys:String>
+    <sys:String x:Key="Glyph.Pause">&#xE769;</sys:String>
+    <sys:String x:Key="Glyph.Music">&#xE8D6;</sys:String>
+    <sys:String x:Key="Glyph.Speaker">&#xE767;</sys:String>
+    <sys:String x:Key="Glyph.Microphone">&#xE720;</sys:String>
+    <sys:String x:Key="Glyph.Phone">&#xE717;</sys:String>
 
     <!-- ===== Цвета: тёмная тема ===== -->
     <Color x:Key="Dark.Text.Primary">#FFFFFFFF</Color>
@@ -101,6 +122,13 @@
     <!-- Кнопка поверх превью. -->
     <Color x:Key="Dark.Overlay.Rest">#B31C1C1C</Color>
     <Color x:Key="Dark.Overlay.Hover">#E62C2C2C</Color>
+    <!-- Обычная кнопка с текстом (например, «Созвон»). -->
+    <Color x:Key="Dark.Button.Rest">#0FFFFFFF</Color>
+    <Color x:Key="Dark.Button.Hover">#15FFFFFF</Color>
+    <Color x:Key="Dark.Button.Pressed">#08FFFFFF</Color>
+    <Color x:Key="Dark.Button.Border">#12FFFFFF</Color>
+    <!-- Текст на акцентной заливке. -->
+    <Color x:Key="Dark.Text.OnAccent">#FF000000</Color>
 
     <!-- ===== Цвета: светлая тема ===== -->
     <Color x:Key="Light.Text.Primary">#E4000000</Color>
@@ -124,6 +152,11 @@
     <Color x:Key="Light.Thumb.BorderHover">#5C000000</Color>
     <Color x:Key="Light.Overlay.Rest">#CCF9F9F9</Color>
     <Color x:Key="Light.Overlay.Hover">#F2FFFFFF</Color>
+    <Color x:Key="Light.Button.Rest">#B3FFFFFF</Color>
+    <Color x:Key="Light.Button.Hover">#80F9F9F9</Color>
+    <Color x:Key="Light.Button.Pressed">#4DF9F9F9</Color>
+    <Color x:Key="Light.Button.Border">#0F000000</Color>
+    <Color x:Key="Light.Text.OnAccent">#FFFFFFFF</Color>
 
     <!-- ===== Цвета иконки в трее (следуют теме панели задач, а не теме приложений) ===== -->
     <Color x:Key="Tray.Glyph.OnDark">#FFFFFFFF</Color>

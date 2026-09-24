@@ -58,6 +58,34 @@
                 <Setter Property="PressedBackground" Value="{DynamicResource Brush.Overlay.Rest}" />
             </Style>
 
+            <!-- Кнопки управления музыкой: крупнее, значок 16. -->
+            <Style x:Key="MediaButton" TargetType="ui:Button" BasedOn="{StaticResource IconButton}">
+                <Setter Property="Width" Value="{StaticResource MediaButton.Size}" />
+                <Setter Property="Height" Value="{StaticResource MediaButton.Size}" />
+                <Setter Property="FontSize" Value="{StaticResource FontSize.IconLarge}" />
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+            </Style>
+
+            <!-- Кнопка-переключатель с текстом (режим созвона). Включённое состояние задаёт разметка модуля. -->
+            <Style x:Key="ChipButton" TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="IsTabStop" Value="False" />
+                <Setter Property="Height" Value="{StaticResource Chip.Height}" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="Padding" Value="{StaticResource Inset.Chip}" />
+                <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}" />
+                <Setter Property="FontSize" Value="{StaticResource FontSize.Caption}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Background" Value="{DynamicResource Brush.Button.Rest}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Button.Border}" />
+                <Setter Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+                <Setter Property="MouseOverBackground" Value="{DynamicResource Brush.Button.Hover}" />
+                <Setter Property="MouseOverBorderBrush" Value="{DynamicResource Brush.Button.Border}" />
+                <Setter Property="PressedBackground" Value="{DynamicResource Brush.Button.Pressed}" />
+                <Setter Property="PressedBorderBrush" Value="{DynamicResource Brush.Button.Border}" />
+                <Setter Property="PressedForeground" Value="{DynamicResource Brush.Text.Secondary}" />
+            </Style>
+
             <Style TargetType="ScrollViewer" BasedOn="{StaticResource {x:Type ScrollViewer}}">
                 <Setter Property="Focusable" Value="False" />
             </Style>

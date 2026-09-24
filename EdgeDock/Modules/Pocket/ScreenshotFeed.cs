@@ -128,13 +128,26 @@ internal sealed class ScreenshotFeed : IDisposable
 
         Task.Run(async () =>
         {
-            // Снимок мог ещё записываться: ждём, пока файл можно будет открыть целиком.
-            for (int attempt = 0; attempt < ReadAttempts && !CanRead(path); attempt++)
+            // Снимок мог ещё записываться, а некоторые программы сначала создают пустой файл
+            // и дописывают его позже. Ждём, пока файл читается и его размер перестал меняться.
+            long lastSize = -1;
+            for (int attempt = 0; attempt < ReadAttempts; attempt++)
+            {
+                long size = ReadableSize(path);
+                if (size > 0 && size == lastSize) break;
+                lastSize = size;
                 await Task.Delay(ReadRetryDelay);
-            if (!CanRead(path) || _disposed) return;
+            }
+            if (_disposed || ReadableSize(path) <= 0) return;
 
             // Миниатюру готовим сразу, чтобы при следующем разворачивании она просто читалась из кэша.
-            var thumbnail = Thumbnails.Get(path);
+            // Если файл всё же был недописан — одна повторная попытка, и только потом ошибка в лог.
+            var thumbnail = Thumbnails.Get(path, logErrors: false);
+            if (thumbnail == null)
+            {
+                await Task.Delay(ReadRetryDelay * 3);
+                thumbnail = Thumbnails.Get(path);
+            }
 
             await _ui.BeginInvoke(() =>
             {
@@ -155,21 +168,22 @@ internal sealed class ScreenshotFeed : IDisposable
         });
     }
 
-    private static bool CanRead(string path)
+    /// <summary>Размер файла, если его уже можно прочитать целиком; иначе -1.</summary>
+    private static long ReadableSize(string path)
     {
         try
         {
             // Открыть без разделения записи получится, только когда программа-скриншотер закрыла файл.
-            using var _ = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return true;
+            using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return file.Length;
         }
         catch (IOException)
         {
-            return false;
+            return -1;
         }
         catch (UnauthorizedAccessException)
         {
-            return false;
+            return -1;
         }
     }
 

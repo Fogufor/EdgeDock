@@ -25,6 +25,22 @@ public sealed class PocketSettings
     public bool ShelfRemoveAfterDrag { get; set; }
 }
 
+/// <summary>settings.json → "audio". Устройства ищутся по вхождению названия, без учёта регистра.</summary>
+public sealed class AudioSettings
+{
+    public List<string> FavoriteOutputs { get; set; } = [];
+    public List<string> FavoriteInputs { get; set; } = [];
+
+    /// <summary>Куда переключаться в режиме созвона. null — кнопки режима нет.</summary>
+    public CallModeSettings? CallMode { get; set; }
+}
+
+public sealed class CallModeSettings
+{
+    public string? Output { get; set; }
+    public string? Input { get; set; }
+}
+
 /// <summary>settings.json. Правится руками; сам виджет в него не пишет (кроме создания при первом запуске).</summary>
 public sealed class Settings
 {
@@ -34,6 +50,8 @@ public sealed class Settings
     public List<string> Modules { get; set; } = ["meeting", "pocket", "media", "audio", "pins"];
 
     public PocketSettings Pocket { get; set; } = new();
+
+    public AudioSettings Audio { get; set; } = new();
 }
 
 /// <summary>Элемент полки в state.json.</summary>
@@ -133,6 +151,9 @@ public sealed class SettingsService
         s.Dock ??= new DockSettings();
         s.Modules ??= [];
         s.Pocket ??= new PocketSettings();
+        s.Audio ??= new AudioSettings();
+        s.Audio.FavoriteOutputs ??= [];
+        s.Audio.FavoriteInputs ??= [];
         var d = s.Dock;
         d.SnapDistancePx = Math.Clamp(d.SnapDistancePx, 0, 200);
         d.Width = Math.Clamp(d.Width, 240, 800);

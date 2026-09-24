@@ -6,6 +6,8 @@ using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using EdgeDock.Core;
+using EdgeDock.Modules.Audio;
+using EdgeDock.Modules.Media;
 using EdgeDock.Modules.Pocket;
 
 namespace EdgeDock;
@@ -59,6 +61,8 @@ public partial class DockWindow : Window
     private IDockModule? CreateModule(string id) => id switch
     {
         "pocket" => new PocketModule(_settings),
+        "media" => new MediaModule(),
+        "audio" => new AudioModule(_settings),
         _ => null,
     };
 

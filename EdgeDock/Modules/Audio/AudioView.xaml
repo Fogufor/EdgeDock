@@ -1,0 +1,114 @@
+<!--
+  Звук: избранные выходы и микрофоны (текущее устройство отмечено акцентом),
+  кнопка «Созвон» — переключить на гарнитуру и обратно.
+-->
+<UserControl x:Class="EdgeDock.Modules.Audio.AudioView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:local="clr-namespace:EdgeDock.Modules.Audio"
+             Focusable="False">
+    <UserControl.Resources>
+        <DataTemplate x:Key="DeviceRow" DataType="{x:Type local:DeviceItem}">
+            <Grid x:Name="Row" Background="Transparent" Height="{StaticResource Device.RowHeight}"
+                  MouseLeftButtonDown="OnRowDown" MouseLeftButtonUp="OnRowUp">
+                <Border x:Name="Fill" CornerRadius="{StaticResource Radius.Small}" />
+                <!-- Отметка текущего устройства, как в меню Windows 11. -->
+                <Border x:Name="Indicator" HorizontalAlignment="Left" Visibility="Collapsed"
+                        Width="{StaticResource Indicator.Width}" Height="{StaticResource Indicator.Height}"
+                        CornerRadius="{StaticResource Radius.Strip}" Background="{DynamicResource Brush.Accent}" />
+                <Grid x:Name="RowContent" Margin="{StaticResource Inset.Row}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="Icon" Text="{Binding Glyph}" FontFamily="{StaticResource Font.Icons}"
+                               FontSize="{StaticResource FontSize.IconLarge}" Foreground="{DynamicResource Brush.Text.Secondary}"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding Label}" Margin="{StaticResource Margin.Horizontal.S}"
+                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <TextBlock x:Name="Note" Grid.Column="2" Text="не подключено" Style="{StaticResource Caption}"
+                               VerticalAlignment="Center" Visibility="Collapsed" />
+                </Grid>
+            </Grid>
+            <DataTemplate.Triggers>
+                <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Brush.Subtle.Hover}" />
+                </Trigger>
+                <Trigger SourceName="Row" Property="IsMouseCaptured" Value="True">
+                    <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Brush.Subtle.Pressed}" />
+                </Trigger>
+                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                    <Setter TargetName="Indicator" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource Brush.Accent}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+                    <Setter TargetName="Row" Property="IsHitTestVisible" Value="False" />
+                    <Setter TargetName="RowContent" Property="Opacity" Value="{StaticResource Opacity.Missing}" />
+                    <Setter TargetName="Note" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Border Style="{StaticResource Card}">
+        <StackPanel>
+            <Grid>
+                <TextBlock Text="Звук" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+                <ui:Button x:Name="CallButton" HorizontalAlignment="Right" Click="OnCallMode"
+                           ToolTip="Переключить выход и микрофон на гарнитуру и обратно">
+                    <ui:Button.Style>
+                        <Style TargetType="ui:Button" BasedOn="{StaticResource ChipButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding State.HasCallMode}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding State.CallModeAvailable}" Value="False">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                                <!-- Включённый режим — акцентная заливка (активное состояние). -->
+                                <DataTrigger Binding="{Binding State.CallModeActive}" Value="True">
+                                    <Setter Property="IsEnabled" Value="True" />
+                                    <Setter Property="Background" Value="{DynamicResource Brush.Accent}" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Text.OnAccent}" />
+                                    <Setter Property="MouseOverBackground" Value="{DynamicResource Brush.Accent.Hover}" />
+                                    <Setter Property="MouseOverBorderBrush" Value="{DynamicResource Brush.Accent.Hover}" />
+                                    <Setter Property="PressedBackground" Value="{DynamicResource Brush.Accent.Pressed}" />
+                                    <Setter Property="PressedBorderBrush" Value="{DynamicResource Brush.Accent.Pressed}" />
+                                    <Setter Property="PressedForeground" Value="{DynamicResource Brush.Text.OnAccent}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ui:Button.Style>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{StaticResource Glyph.Phone}" FontFamily="{StaticResource Font.Icons}"
+                                   FontSize="{StaticResource FontSize.Icon}" Margin="{StaticResource Margin.Right.XS}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="Созвон" VerticalAlignment="Center" />
+                    </StackPanel>
+                </ui:Button>
+            </Grid>
+
+            <TextBlock Text="Добавьте избранные устройства в settings.json → audio"
+                       Foreground="{DynamicResource Brush.Text.Tertiary}" Margin="{StaticResource Margin.Top.S}"
+                       TextWrapping="Wrap">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource Caption}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding State.HasFavorites}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <ItemsControl ItemsSource="{Binding Outputs}" ItemTemplate="{StaticResource DeviceRow}"
+                          Focusable="False" Margin="{StaticResource Margin.Top.S}" />
+            <ItemsControl ItemsSource="{Binding Inputs}" ItemTemplate="{StaticResource DeviceRow}"
+                          Focusable="False" Margin="{StaticResource Margin.Top.S}" />
+        </StackPanel>
+    </Border>
+</UserControl>
