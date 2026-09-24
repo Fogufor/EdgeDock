@@ -15,7 +15,14 @@
     <sys:Double x:Key="Space.S">8</sys:Double>
     <sys:Double x:Key="Space.M">16</sys:Double>
     <sys:Double x:Key="Space.L">24</sys:Double>
-    <Thickness x:Key="Inset.PanelBody">16,0,16,16</Thickness>
+    <Thickness x:Key="Inset.PanelBody">8,0,8,8</Thickness>
+    <Thickness x:Key="Inset.Card">8</Thickness>
+    <Thickness x:Key="Inset.Row">8,0,4,0</Thickness>
+    <Thickness x:Key="Margin.Top.S">0,8,0,0</Thickness>
+    <Thickness x:Key="Margin.Top.M">0,16,0,0</Thickness>
+    <Thickness x:Key="Margin.Right.S">0,0,8,0</Thickness>
+    <Thickness x:Key="Margin.Horizontal.S">8,0,8,0</Thickness>
+    <Thickness x:Key="Margin.Overlay">4</Thickness>
 
     <!-- ===== Радиусы ===== -->
     <CornerRadius x:Key="Radius.Card">8</CornerRadius>
@@ -46,12 +53,27 @@
     <sys:Double x:Key="Drag.Threshold">4</sys:Double>
     <sys:Double x:Key="Opacity.SnapHint">0.6</sys:Double>
 
+    <!-- ===== Модули ===== -->
+    <!-- Превью снимка: 16:9. При ширине панели 360 видно три превью и край четвёртого. -->
+    <sys:Double x:Key="Thumb.Width">96</sys:Double>
+    <sys:Double x:Key="Thumb.Height">54</sys:Double>
+    <sys:Double x:Key="Shelf.RowHeight">36</sys:Double>
+    <sys:Double x:Key="Shelf.MaxHeight">216</sys:Double>
+    <sys:Double x:Key="Shelf.IconSize">20</sys:Double>
+    <sys:Double x:Key="IconButton.Size">24</sys:Double>
+    <sys:Double x:Key="Opacity.Selection">0.2</sys:Double>
+    <sys:Double x:Key="Opacity.Missing">0.5</sys:Double>
+    <sys:Double x:Key="Opacity.Pressed">0.85</sys:Double>
+
     <!-- ===== Шрифты и иконки ===== -->
     <FontFamily x:Key="Font.Text">Segoe UI Variable Text, Segoe UI</FontFamily>
     <FontFamily x:Key="Font.Icons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
     <sys:Double x:Key="FontSize.Body">14</sys:Double>
     <sys:Double x:Key="FontSize.Caption">12</sys:Double>
+    <sys:Double x:Key="FontSize.Icon">12</sys:Double>
     <sys:String x:Key="Glyph.Tray">&#xE90D;</sys:String>
+    <sys:String x:Key="Glyph.Folder">&#xE838;</sys:String>
+    <sys:String x:Key="Glyph.Close">&#xE711;</sys:String>
 
     <!-- ===== Цвета: тёмная тема ===== -->
     <Color x:Key="Dark.Text.Primary">#FFFFFFFF</Color>
@@ -69,6 +91,16 @@
     <Color x:Key="Dark.Panel.Fallback">#F2202020</Color>
     <!-- Обводка панели, её рисует DWM (цвет должен быть непрозрачным). -->
     <Color x:Key="Dark.Panel.Border">#FF404040</Color>
+    <Color x:Key="Dark.Card.Background">#0DFFFFFF</Color>
+    <Color x:Key="Dark.Card.Border">#19000000</Color>
+    <Color x:Key="Dark.Subtle.Hover">#0FFFFFFF</Color>
+    <Color x:Key="Dark.Subtle.Pressed">#0AFFFFFF</Color>
+    <Color x:Key="Dark.Thumb.Placeholder">#14FFFFFF</Color>
+    <Color x:Key="Dark.Thumb.Border">#14FFFFFF</Color>
+    <Color x:Key="Dark.Thumb.BorderHover">#5CFFFFFF</Color>
+    <!-- Кнопка поверх превью. -->
+    <Color x:Key="Dark.Overlay.Rest">#B31C1C1C</Color>
+    <Color x:Key="Dark.Overlay.Hover">#E62C2C2C</Color>
 
     <!-- ===== Цвета: светлая тема ===== -->
     <Color x:Key="Light.Text.Primary">#E4000000</Color>
@@ -83,6 +115,15 @@
     <Color x:Key="Light.Pill.Border">#1A000000</Color>
     <Color x:Key="Light.Panel.Fallback">#F2F3F3F3</Color>
     <Color x:Key="Light.Panel.Border">#FFD5D5D5</Color>
+    <Color x:Key="Light.Card.Background">#B3FFFFFF</Color>
+    <Color x:Key="Light.Card.Border">#0F000000</Color>
+    <Color x:Key="Light.Subtle.Hover">#09000000</Color>
+    <Color x:Key="Light.Subtle.Pressed">#06000000</Color>
+    <Color x:Key="Light.Thumb.Placeholder">#0F000000</Color>
+    <Color x:Key="Light.Thumb.Border">#14000000</Color>
+    <Color x:Key="Light.Thumb.BorderHover">#5C000000</Color>
+    <Color x:Key="Light.Overlay.Rest">#CCF9F9F9</Color>
+    <Color x:Key="Light.Overlay.Hover">#F2FFFFFF</Color>
 
     <!-- ===== Цвета иконки в трее (следуют теме панели задач, а не теме приложений) ===== -->
     <Color x:Key="Tray.Glyph.OnDark">#FFFFFFFF</Color>

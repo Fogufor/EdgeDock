@@ -1,0 +1,128 @@
+<!--
+  Карман: лента последних снимков экрана и полка. Одна карточка — одна зона:
+  всё перетаскивается внутрь (на полку) и наружу (как файлы) одинаково.
+-->
+<UserControl x:Class="EdgeDock.Modules.Pocket.PocketView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:local="clr-namespace:EdgeDock.Modules.Pocket"
+             Focusable="False"
+             AllowDrop="True">
+
+    <Border x:Name="Card" Style="{StaticResource Card}">
+        <StackPanel>
+
+            <!-- ===== Снимки экрана ===== -->
+            <TextBlock Text="Снимки экрана" Style="{StaticResource Caption}" />
+            <Grid Margin="{StaticResource Margin.Top.S}" Height="{StaticResource Thumb.Height}">
+                <TextBlock x:Name="ShotsEmpty" Text="Снимков пока нет" Style="{StaticResource Caption}"
+                           Foreground="{DynamicResource Brush.Text.Tertiary}" VerticalAlignment="Center" />
+
+                <!-- Листается колесом мыши; полосы прокрутки нет, край четвёртого превью подсказывает, что дальше есть ещё. -->
+                <ScrollViewer x:Name="Ribbon"
+                              HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
+                              PreviewMouseWheel="OnRibbonWheel">
+                    <ItemsControl x:Name="Shots" Focusable="False">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type local:ShotItem}">
+                                <Grid x:Name="Tile" Background="Transparent"
+                                      Width="{StaticResource Thumb.Width}" Height="{StaticResource Thumb.Height}"
+                                      Margin="{StaticResource Margin.Right.S}"
+                                      MouseLeftButtonDown="OnShotDown" MouseMove="OnShotMove"
+                                      MouseLeftButtonUp="OnShotUp" LostMouseCapture="OnPressLost">
+                                    <Border CornerRadius="{StaticResource Radius.Small}"
+                                            Background="{DynamicResource Brush.Thumb.Placeholder}" />
+                                    <!-- Картинка фоном рамки — так у неё скруглённые углы без обрезки. -->
+                                    <Border CornerRadius="{StaticResource Radius.Small}" RenderOptions.BitmapScalingMode="HighQuality">
+                                        <Border.Background>
+                                            <ImageBrush ImageSource="{Binding Thumbnail}" Stretch="UniformToFill" />
+                                        </Border.Background>
+                                    </Border>
+                                    <Border x:Name="Outline" CornerRadius="{StaticResource Radius.Small}" BorderThickness="1"
+                                            BorderBrush="{DynamicResource Brush.Thumb.Border}" />
+                                    <ui:Button x:Name="FolderButton" Style="{StaticResource OverlayIconButton}"
+                                               Content="{StaticResource Glyph.Folder}" ToolTip="Показать в папке"
+                                               HorizontalAlignment="Right" VerticalAlignment="Top"
+                                               Margin="{StaticResource Margin.Overlay}"
+                                               Visibility="Hidden" Click="OnShowInFolder" />
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <Trigger SourceName="Tile" Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Outline" Property="BorderBrush" Value="{DynamicResource Brush.Thumb.BorderHover}" />
+                                        <Setter TargetName="FolderButton" Property="Visibility" Value="Visible" />
+                                    </Trigger>
+                                    <Trigger SourceName="Tile" Property="IsMouseCaptured" Value="True">
+                                        <Setter TargetName="Tile" Property="Opacity" Value="{StaticResource Opacity.Pressed}" />
+                                    </Trigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- ===== Полка ===== -->
+            <TextBlock Text="Полка" Style="{StaticResource Caption}" Margin="{StaticResource Margin.Top.M}" />
+            <TextBlock x:Name="ShelfEmpty" Text="Перетащите сюда файлы" Style="{StaticResource Caption}"
+                       Foreground="{DynamicResource Brush.Text.Tertiary}" Margin="{StaticResource Margin.Top.S}" />
+
+            <ScrollViewer Margin="{StaticResource Margin.Top.S}" MaxHeight="{StaticResource Shelf.MaxHeight}"
+                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl x:Name="ShelfList" Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:ShelfItem}">
+                            <Grid x:Name="Row" Background="Transparent" Height="{StaticResource Shelf.RowHeight}"
+                                  MouseLeftButtonDown="OnRowDown" MouseMove="OnRowMove"
+                                  MouseLeftButtonUp="OnRowUp" LostMouseCapture="OnPressLost">
+                                <Border x:Name="Fill" CornerRadius="{StaticResource Radius.Small}" />
+                                <Border x:Name="Selection" CornerRadius="{StaticResource Radius.Small}"
+                                        Background="{DynamicResource Brush.Accent}" Opacity="{StaticResource Opacity.Selection}"
+                                        Visibility="Collapsed" />
+                                <Grid x:Name="RowContent" Margin="{StaticResource Inset.Row}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Image Source="{Binding Icon}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
+                                           Width="{StaticResource Shelf.IconSize}" Height="{StaticResource Shelf.IconSize}" />
+                                    <StackPanel Grid.Column="1" Margin="{StaticResource Margin.Horizontal.S}" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock x:Name="MissingNote" Text="Файл не найден — нажмите, чтобы убрать"
+                                                   Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis"
+                                                   Visibility="Collapsed" />
+                                    </StackPanel>
+                                    <ui:Button x:Name="RemoveButton" Grid.Column="2" Style="{StaticResource IconButton}"
+                                               Content="{StaticResource Glyph.Close}" ToolTip="Убрать с полки"
+                                               VerticalAlignment="Center" Visibility="Hidden" Click="OnRemoveClick" />
+                                </Grid>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Brush.Subtle.Hover}" />
+                                    <Setter TargetName="RemoveButton" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                                <Trigger SourceName="Row" Property="IsMouseCaptured" Value="True">
+                                    <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Brush.Subtle.Pressed}" />
+                                </Trigger>
+                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                    <Setter TargetName="Selection" Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsMissing}" Value="True">
+                                    <Setter TargetName="RowContent" Property="Opacity" Value="{StaticResource Opacity.Missing}" />
+                                    <Setter TargetName="MissingNote" Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </StackPanel>
+    </Border>
+</UserControl>

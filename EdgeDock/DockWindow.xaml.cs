@@ -6,6 +6,7 @@ using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using EdgeDock.Core;
+using EdgeDock.Modules.Pocket;
 
 namespace EdgeDock;
 
@@ -31,7 +32,7 @@ public partial class DockWindow : Window
     private DockMode _shownMode;
     private PixelRect _handleRect;
 
-    private bool _expanded, _suspended, _attention, _layoutScheduled;
+    private bool _expanded, _suspended, _attention, _layoutScheduled, _viewsCreated;
     private bool _hover, _pressed, _dragging;
     private Native.POINT _pressPoint;
     private int _grabX, _grabY;
@@ -50,23 +51,34 @@ public partial class DockWindow : Window
         _collapseTimer.Tick += (_, _) => OnCollapseTimer();
         ApplySettings();
 
-        foreach (string id in settings.Settings.Modules)
+        SourceInitialized += OnSourceInitialized;
+        UpdateVisual();
+    }
+
+    /// <summary>Модуль по id из settings.json. Модули добавляются по этапам, неизвестные id пропускаются.</summary>
+    private IDockModule? CreateModule(string id) => id switch
+    {
+        "pocket" => new PocketModule(_settings),
+        _ => null,
+    };
+
+    /// <summary>Создать модули по списку из settings.json; при перезагрузке настроек — заново.</summary>
+    private void BuildModules()
+    {
+        foreach (var module in _modules) (module as IDisposable)?.Dispose();
+        _modules.Clear();
+        _panel?.ModuleViews.Clear();
+        _viewsCreated = false;
+
+        foreach (string id in _settings.Settings.Modules)
         {
             var module = CreateModule(id);
             if (module == null) continue;
             module.AttentionChanged += (_, _) => UpdateAttention();
             _modules.Add(module);
         }
-
-        SourceInitialized += OnSourceInitialized;
-        UpdateVisual();
+        UpdateAttention();
     }
-
-    /// <summary>Модуль по id из settings.json. Модули добавляются по этапам, неизвестные id пропускаются.</summary>
-    private static IDockModule? CreateModule(string id) => id switch
-    {
-        _ => null,
-    };
 
     /// <summary>Монитор (HMONITOR), на котором сейчас стоит док.</summary>
     public IntPtr CurrentMonitor =>
@@ -78,8 +90,8 @@ public partial class DockWindow : Window
         var dock = _settings.Settings.Dock;
         _expandTimer.Interval = TimeSpan.FromMilliseconds(dock.ExpandDelayMs);
         _collapseTimer.Interval = TimeSpan.FromMilliseconds(dock.CollapseDelayMs);
-        if (_hwnd == IntPtr.Zero) return;
         CollapseNow();
+        BuildModules();
         Layout();
     }
 
@@ -363,14 +375,26 @@ public partial class DockWindow : Window
         _expandTimer.Stop();
 
         var panel = EnsurePanel();
-        double width = _settings.Settings.Dock.Width;
-        var (rect, slideX, slideY) = _placement.PanelRect(_shownMode, _settings.State.Dock.Edge, _monitor, _handleRect,
-            width, panel.MeasureHeight(width));
+        if (!_viewsCreated)
+        {
+            // Интерфейс модулей создаётся один раз — при первом разворачивании.
+            foreach (var module in _modules) panel.AddModuleView(module.CreateView());
+            _viewsCreated = true;
+        }
 
         _expanded = true;
         foreach (var module in _modules) module.OnExpanded();
+
+        var (rect, slideX, slideY) = PanelPlacement();
         panel.ShowAt(rect, slideX, slideY);
         UpdateVisual();
+    }
+
+    private (PixelRect Rect, int SlideX, int SlideY) PanelPlacement()
+    {
+        double width = _settings.Settings.Dock.Width;
+        return _placement.PanelRect(_shownMode, _settings.State.Dock.Edge, _monitor!, _handleRect,
+            width, _panel!.MeasureHeight(width));
     }
 
     private PanelWindow EnsurePanel()
@@ -381,9 +405,11 @@ public partial class DockWindow : Window
         _panel.PointerEntered += () => _collapseTimer.Stop();
         _panel.PointerLeft += () => { if (_expanded) Restart(_collapseTimer); };
         _panel.HeaderDragStarted += OnHeaderDragStarted;
-
-        // Интерфейс модулей создаётся один раз — при первом разворачивании.
-        foreach (var module in _modules) _panel.ModuleViews.Add(module.CreateView());
+        _panel.ContentResized += () =>
+        {
+            // Содержимое выросло или уменьшилось (новый снимок, файл на полке) — подгоняем размер окна.
+            if (_expanded && !_dragging && _monitor != null) _panel.MoveTo(PanelPlacement().Rect);
+        };
         return _panel;
     }
 

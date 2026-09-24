@@ -23,6 +23,9 @@ public partial class PanelWindow : Window
     public event Action? PointerEntered;
     public event Action? PointerLeft;
 
+    /// <summary>Высота содержимого изменилась, пока панель открыта.</summary>
+    public event Action? ContentResized;
+
     /// <summary>Нажали на заголовок и потянули: DockWindow забирает мышь и продолжает перетаскивание.</summary>
     public event Action<Native.POINT>? HeaderDragStarted;
 
@@ -40,9 +43,25 @@ public partial class PanelWindow : Window
         Header.MouseMove += OnHeaderMove;
         Header.MouseLeftButtonUp += (_, _) => EndHeaderPress();
         Header.LostMouseCapture += (_, _) => { _headerPressed = false; UpdateHeaderVisual(); };
+
+        Body.SizeChanged += (_, e) =>
+        {
+            if (e.HeightChanged && IsVisible && !_hiding) ContentResized?.Invoke();
+        };
     }
 
     public UIElementCollection ModuleViews => ModuleHost.Children;
+
+    /// <summary>Добавить блок модуля; между блоками — отступ из токенов.</summary>
+    public void AddModuleView(FrameworkElement view)
+    {
+        if (ModuleHost.Children.Count > 0) view.Margin = (Thickness)FindResource("Margin.Top.S");
+        ModuleHost.Children.Add(view);
+    }
+
+    /// <summary>Переставить открытую панель (без анимации) — например, когда выросло содержимое.</summary>
+    public void MoveTo(PixelRect rect) =>
+        Native.SetWindowPos(_hwnd, Native.HWND_TOPMOST, rect.Left, rect.Top, rect.Width, rect.Height, Native.SWP_NOACTIVATE);
 
     /// <summary>Экранный прямоугольник панели в пикселях.</summary>
     public PixelRect ScreenRect =>
@@ -164,20 +183,19 @@ public partial class PanelWindow : Window
 
     protected override void OnMouseLeave(MouseEventArgs e) => PointerLeft?.Invoke();
 
-    protected override void OnDragEnter(DragEventArgs e)
-    {
-        e.Effects = DragDropEffects.None;
-        e.Handled = true;
-        PointerEntered?.Invoke();
-    }
+    // Перетаскивание над панелью: следим через Preview-события — они доходят до окна раньше,
+    // чем модуль (например, карман) обработает само перетаскивание.
+    protected override void OnPreviewDragEnter(DragEventArgs e) => PointerEntered?.Invoke();
+
+    protected override void OnPreviewDragLeave(DragEventArgs e) => PointerLeft?.Invoke();
 
     protected override void OnDragOver(DragEventArgs e)
     {
+        // Над местом, которое ничего не принимает (заголовок, пустые края), — «нельзя».
+        if (e.Handled) return;
         e.Effects = DragDropEffects.None;
         e.Handled = true;
     }
-
-    protected override void OnDragLeave(DragEventArgs e) => PointerLeft?.Invoke();
 
     private void OnHeaderDown(object sender, MouseButtonEventArgs e)
     {

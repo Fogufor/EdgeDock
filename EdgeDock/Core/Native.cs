@@ -198,4 +198,47 @@ public static class Native
 
     public const int QUNS_BUSY = 2, QUNS_RUNNING_D3D_FULL_SCREEN = 3, QUNS_PRESENTATION_MODE = 4;
     [DllImport("shell32.dll")] public static extern int SHQueryUserNotificationState(out int state);
+
+    // ----- Оболочка: папки, значки файлов -----
+    [DllImport("shell32.dll")] private static extern int SHGetKnownFolderPath(ref Guid id, uint flags, IntPtr token, out IntPtr path);
+    [DllImport("ole32.dll")] private static extern void CoTaskMemFree(IntPtr memory);
+
+    /// <summary>Путь известной папки Windows (например, «Снимки экрана») или null.</summary>
+    public static string? KnownFolder(Guid id)
+    {
+        if (SHGetKnownFolderPath(ref id, 0, IntPtr.Zero, out IntPtr path) != 0) return null;
+        try { return Marshal.PtrToStringUni(path); }
+        finally { CoTaskMemFree(path); }
+    }
+
+    public static readonly Guid FOLDERID_Screenshots = new("b7bede81-df94-4682-a7d8-57a52620b86f");
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct SHFILEINFO
+    {
+        public IntPtr hIcon;
+        public int iIcon;
+        public uint dwAttributes;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string szDisplayName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)] public string szTypeName;
+    }
+
+    public const uint SHGFI_ICON = 0x100, SHGFI_LARGEICON = 0x0, SHGFI_USEFILEATTRIBUTES = 0x10;
+    public const uint FILE_ATTRIBUTE_NORMAL = 0x80;
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    public static extern IntPtr SHGetFileInfo(string path, uint attributes, ref SHFILEINFO info, uint size, uint flags);
+
+    // ----- Клавиатура -----
+    // Окно дока не получает фокус, поэтому состояние клавиш WPF не видит — спрашиваем систему напрямую.
+    [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);
+    public const int VK_SHIFT = 0x10, VK_CONTROL = 0x11;
+
+    public static bool IsKeyDown(int key) => (GetAsyncKeyState(key) & 0x8000) != 0;
+
+    // ----- Перетаскивание: «виртуальные» файлы без пути на диске -----
+    [DllImport("ole32.dll")] public static extern void ReleaseStgMedium(ref System.Runtime.InteropServices.ComTypes.STGMEDIUM medium);
+    [DllImport("kernel32.dll")] public static extern IntPtr GlobalLock(IntPtr memory);
+    [DllImport("kernel32.dll")] public static extern bool GlobalUnlock(IntPtr memory);
+    [DllImport("kernel32.dll")] public static extern UIntPtr GlobalSize(IntPtr memory);
 }

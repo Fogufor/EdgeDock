@@ -15,6 +15,16 @@ public sealed class DockSettings
     public bool Autostart { get; set; } = true;
 }
 
+/// <summary>settings.json → "pocket".</summary>
+public sealed class PocketSettings
+{
+    /// <summary>Папка снимков. null — системная папка «Снимки экрана».</summary>
+    public string? ScreenshotsFolder { get; set; }
+
+    /// <summary>Убирать элемент с полки после того, как его перетащили наружу.</summary>
+    public bool ShelfRemoveAfterDrag { get; set; }
+}
+
 /// <summary>settings.json. Правится руками; сам виджет в него не пишет (кроме создания при первом запуске).</summary>
 public sealed class Settings
 {
@@ -22,12 +32,24 @@ public sealed class Settings
 
     /// <summary>Модули в порядке панели. Модуль, которого нет в списке, не загружается вообще.</summary>
     public List<string> Modules { get; set; } = ["meeting", "pocket", "media", "audio", "pins"];
+
+    public PocketSettings Pocket { get; set; } = new();
 }
 
-/// <summary>state.json. Пишет только виджет: положение, закрепление, позже — содержимое полки.</summary>
+/// <summary>Элемент полки в state.json.</summary>
+public sealed class ShelfEntry
+{
+    public string Path { get; set; } = "";
+
+    /// <summary>Файл — наша копия в %LocalAppData%\EdgeDock\shelf (у данных не было пути на диске).</summary>
+    public bool Owned { get; set; }
+}
+
+/// <summary>state.json. Пишет только виджет: положение, закрепление, содержимое полки.</summary>
 public sealed class AppState
 {
     public DockState Dock { get; set; } = new();
+    public List<ShelfEntry> Shelf { get; set; } = [];
 }
 
 /// <summary>Чтение и запись settings.json и state.json в %LocalAppData%\EdgeDock.</summary>
@@ -46,6 +68,9 @@ public sealed class SettingsService
 
     public Settings Settings { get; private set; } = new();
     public AppState State { get; private set; } = new();
+
+    /// <summary>state.json прочитан без ошибок (или его ещё нет). Иначе чистить «ничейные» файлы полки нельзя.</summary>
+    public bool StateIsTrusted { get; private set; } = true;
 
     /// <summary>
     /// Читает settings.json (при первом запуске создаёт его со значениями по умолчанию).
@@ -80,11 +105,14 @@ public sealed class SettingsService
         {
             if (File.Exists(AppPaths.StateFile))
                 State = JsonSerializer.Deserialize<AppState>(File.ReadAllText(AppPaths.StateFile), Json) ?? new AppState();
+            State.Dock ??= new DockState();
+            State.Shelf ??= [];
         }
         catch (Exception ex)
         {
-            Log.Error("state.json: не удалось прочитать, положение сброшено.", ex);
+            Log.Error("state.json: не удалось прочитать, положение и полка сброшены.", ex);
             State = new AppState();
+            StateIsTrusted = false;
         }
     }
 
@@ -104,6 +132,7 @@ public sealed class SettingsService
     {
         s.Dock ??= new DockSettings();
         s.Modules ??= [];
+        s.Pocket ??= new PocketSettings();
         var d = s.Dock;
         d.SnapDistancePx = Math.Clamp(d.SnapDistancePx, 0, 200);
         d.Width = Math.Clamp(d.Width, 240, 800);
