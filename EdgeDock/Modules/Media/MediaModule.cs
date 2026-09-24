@@ -1,11 +1,13 @@
 using System.ComponentModel;
 using System.IO;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using EdgeDock.Core;
+using Windows.Foundation;
 using Windows.Media.Control;
 using Windows.Storage.Streams;
 
@@ -41,24 +43,57 @@ public sealed class MediaState : INotifyPropertyChanged
 }
 
 /// <summary>
-/// Музыка: текущая медиа-сессия Windows (Spotify, браузер, плеер). Только события, без опроса.
-/// Нет сессии — блок скрыт. Id в settings.json — "media".
+/// Музыка. Два источника, оба только по событиям, без опроса:
+/// медиа-сессия Windows (Spotify, Chrome, Edge, плееры) и Яндекс Браузер через наше расширение
+/// (он сам Windows о воспроизведении не сообщает). Показывается тот, где играет;
+/// если нигде не играет — медиа-сессия Windows, если она есть. Ничего нет — блок скрыт.
+/// Id в settings.json — "media".
 /// </summary>
 internal sealed class MediaModule : IDockModule, IDisposable
 {
     /// <summary>Ширина декодирования обложки в пикселях: хватает для 48 DIP при масштабе до 200%.</summary>
     private const int CoverDecodeWidth = 96;
 
+    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(5) };
+
+    private enum Source { None, System, Browser }
+
+    private sealed record Track(string Title, string Artist, bool IsPlaying, bool CanPrevious, bool CanPlayPause, bool CanNext)
+    {
+        public static readonly Track Empty = new("", "", false, false, false, false);
+    }
+
     private readonly Dispatcher _ui = Dispatcher.CurrentDispatcher;
+    private readonly BrowserMusicBridge _browser;
+
+    // Источник 1: медиа-сессия Windows.
     private GlobalSystemMediaTransportControlsSessionManager? _manager;
     private GlobalSystemMediaTransportControlsSession? _session;
-    private IRandomAccessStreamReference? _thumbnail;
+    private Track? _system;
+    private IRandomAccessStreamReference? _systemCover;
+    private int _propertiesVersion;
+
+    // Источник 2: Яндекс Браузер.
+    private BrowserMusicBridge.Track? _browserTrack;
+
+    private Source _shown;
+    private object? _coverKey; // чья обложка показана: ссылка на поток Windows или адрес картинки из браузера
+    private int _coverVersion;
     private bool _expanded, _suspended, _disposed;
-    private int _version;
 
     public MediaState State { get; } = new();
 
-    public MediaModule() => _ = ConnectAsync();
+    public MediaModule()
+    {
+        _browser = new BrowserMusicBridge(_ui);
+        _browser.Changed += track =>
+        {
+            _browserTrack = track;
+            Publish();
+        };
+        _browser.Start();
+        _ = ConnectAsync();
+    }
 
     public string Id => "media";
 
@@ -75,7 +110,7 @@ internal sealed class MediaModule : IDockModule, IDisposable
     public void OnExpanded()
     {
         _expanded = true;
-        _ = LoadCoverAsync(_version);
+        _ = LoadCoverAsync(++_coverVersion);
     }
 
     /// <summary>Панель свернулась — обложка выгружается.</summary>
@@ -90,34 +125,83 @@ internal sealed class MediaModule : IDockModule, IDisposable
         _suspended = true;
         if (_manager != null) _manager.CurrentSessionChanged -= OnCurrentSessionChanged;
         AttachSession(null);
+        _browser.Stop();
     }
 
     public void Resume()
     {
         _suspended = false;
+        _browser.Start();
         if (_manager == null) return;
         _manager.CurrentSessionChanged += OnCurrentSessionChanged;
         AttachSession(_manager.GetCurrentSession());
     }
 
-    public async void Previous() => await Control(s => s.TrySkipPreviousAsync().AsTask());
+    public void Previous() => Command("previous", s => s.TrySkipPreviousAsync());
 
-    public async void PlayPause() => await Control(s => s.TryTogglePlayPauseAsync().AsTask());
+    public void PlayPause() => Command("playPause", s => s.TryTogglePlayPauseAsync());
 
-    public async void Next() => await Control(s => s.TrySkipNextAsync().AsTask());
+    public void Next() => Command("next", s => s.TrySkipNextAsync());
 
-    private async Task Control(Func<GlobalSystemMediaTransportControlsSession, Task<bool>> command)
+    /// <summary>Кнопка идёт туда, чей трек сейчас показан.</summary>
+    private async void Command(string browserCommand, Func<GlobalSystemMediaTransportControlsSession, IAsyncOperation<bool>> systemCommand)
     {
-        if (_session == null) return;
+        if (_shown == Source.Browser)
+        {
+            _browser.Send(browserCommand);
+            return;
+        }
+        if (_shown != Source.System || _session == null) return;
         try
         {
-            await command(_session);
+            await systemCommand(_session);
         }
         catch (Exception ex)
         {
             Log.Error("Музыка: команда плееру не прошла.", ex);
         }
     }
+
+    /// <summary>Выбрать источник и показать его трек.</summary>
+    private void Publish()
+    {
+        bool systemPlaying = _system?.IsPlaying == true;
+        bool browserPlaying = _browserTrack?.Playing == true;
+        var source = browserPlaying && !systemPlaying ? Source.Browser
+            : _system != null ? Source.System
+            : _browserTrack != null ? Source.Browser
+            : Source.None;
+
+        var track = source switch
+        {
+            Source.System => _system,
+            Source.Browser => new Track(_browserTrack!.Title, _browserTrack.Artist, _browserTrack.Playing,
+                _browserTrack.CanPrevious, _browserTrack.CanPlayPause, _browserTrack.CanNext),
+            _ => null,
+        };
+
+        State.HasSession = track != null;
+        State.Title = track?.Title ?? "";
+        State.Artist = track?.Artist ?? "";
+        State.IsPlaying = track?.IsPlaying ?? false;
+        State.CanPrevious = track?.CanPrevious ?? false;
+        State.CanPlayPause = track?.CanPlayPause ?? false;
+        State.CanNext = track?.CanNext ?? false;
+
+        object? coverKey = source switch
+        {
+            Source.System => _systemCover,
+            Source.Browser => _browserTrack!.Artwork,
+            _ => null,
+        };
+        if (source == _shown && Equals(coverKey, _coverKey)) return;
+        _shown = source;
+        _coverKey = coverKey;
+        State.Cover = null;
+        _ = LoadCoverAsync(++_coverVersion);
+    }
+
+    // ----- Медиа-сессия Windows -----
 
     private async Task ConnectAsync()
     {
@@ -153,25 +237,32 @@ internal sealed class MediaModule : IDockModule, IDisposable
         }
 
         _session = session;
-        State.HasSession = session != null;
+        _system = session == null ? null : Track.Empty;
+        _systemCover = null;
         if (session != null)
         {
             session.MediaPropertiesChanged += OnMediaPropertiesChanged;
             session.PlaybackInfoChanged += OnPlaybackInfoChanged;
+            RefreshPlayback();
+            _ = RefreshPropertiesAsync();
         }
-        RefreshPlayback();
-        _ = RefreshPropertiesAsync();
+        Publish();
     }
 
     private void RefreshPlayback()
     {
+        if (_session == null || _system == null) return;
         try
         {
-            var info = _session?.GetPlaybackInfo();
-            State.IsPlaying = info?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
-            State.CanPrevious = info?.Controls.IsPreviousEnabled ?? false;
-            State.CanPlayPause = info?.Controls.IsPlayPauseToggleEnabled ?? false;
-            State.CanNext = info?.Controls.IsNextEnabled ?? false;
+            var info = _session.GetPlaybackInfo();
+            _system = _system with
+            {
+                IsPlaying = info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
+                CanPrevious = info.Controls.IsPreviousEnabled,
+                CanPlayPause = info.Controls.IsPlayPauseToggleEnabled,
+                CanNext = info.Controls.IsNextEnabled,
+            };
+            Publish();
         }
         catch (Exception ex)
         {
@@ -182,25 +273,16 @@ internal sealed class MediaModule : IDockModule, IDisposable
 
     private async Task RefreshPropertiesAsync()
     {
-        int version = ++_version;
+        int version = ++_propertiesVersion;
         var session = _session;
-        if (session == null)
-        {
-            State.Title = State.Artist = "";
-            State.Cover = null;
-            _thumbnail = null;
-            return;
-        }
-
+        if (session == null) return;
         try
         {
             var properties = await session.TryGetMediaPropertiesAsync();
-            if (version != _version) return; // пока ждали, трек сменился ещё раз
-            State.Title = properties.Title ?? "";
-            State.Artist = properties.Artist ?? "";
-            _thumbnail = properties.Thumbnail;
-            State.Cover = null;
-            await LoadCoverAsync(version);
+            if (version != _propertiesVersion || session != _session || _system == null) return; // пока ждали, всё сменилось
+            _system = _system with { Title = properties.Title ?? "", Artist = properties.Artist ?? "" };
+            _systemCover = properties.Thumbnail;
+            Publish();
         }
         catch (Exception ex)
         {
@@ -208,26 +290,30 @@ internal sealed class MediaModule : IDockModule, IDisposable
         }
     }
 
+    // ----- Обложка -----
+
     /// <summary>Обложка декодируется сразу в маленький размер и только пока панель развёрнута.</summary>
     private async Task LoadCoverAsync(int version)
     {
-        if (!_expanded || _thumbnail == null || State.Cover != null) return;
+        if (!_expanded || _coverKey == null || State.Cover != null) return;
         try
         {
-            using var stream = await _thumbnail.OpenReadAsync();
-            var memory = new MemoryStream();
-            await stream.AsStreamForRead().CopyToAsync(memory);
-            memory.Position = 0;
+            byte[]? bytes = _coverKey switch
+            {
+                IRandomAccessStreamReference reference => await ReadAsync(reference),
+                string address => await DownloadAsync(address),
+                _ => null,
+            };
+            if (bytes == null || bytes.Length == 0 || version != _coverVersion || !_expanded) return;
 
             var image = new BitmapImage();
             image.BeginInit();
             image.CacheOption = BitmapCacheOption.OnLoad;
             image.DecodePixelWidth = CoverDecodeWidth;
-            image.StreamSource = memory;
+            image.StreamSource = new MemoryStream(bytes);
             image.EndInit();
             image.Freeze();
-
-            if (_expanded && version == _version) State.Cover = image;
+            State.Cover = image;
         }
         catch (Exception ex)
         {
@@ -235,10 +321,33 @@ internal sealed class MediaModule : IDockModule, IDisposable
         }
     }
 
+    private static async Task<byte[]> ReadAsync(IRandomAccessStreamReference reference)
+    {
+        using var stream = await reference.OpenReadAsync();
+        var memory = new MemoryStream();
+        await stream.AsStreamForRead().CopyToAsync(memory);
+        return memory.ToArray();
+    }
+
+    /// <summary>Обложка из браузера: https-адрес картинки или data:-адрес. Другие адреса не открываем.</summary>
+    private static async Task<byte[]?> DownloadAsync(string address)
+    {
+        if (address.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            int comma = address.IndexOf(',');
+            return comma > 0 && address[..comma].EndsWith(";base64", StringComparison.OrdinalIgnoreCase)
+                ? Convert.FromBase64String(address[(comma + 1)..])
+                : null;
+        }
+        if (!Uri.TryCreate(address, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps) return null;
+        return await Http.GetByteArrayAsync(uri);
+    }
+
     public void Dispose()
     {
         _disposed = true;
         if (_manager != null) _manager.CurrentSessionChanged -= OnCurrentSessionChanged;
         AttachSession(null);
+        _browser.Dispose();
     }
 }
