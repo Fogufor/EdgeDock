@@ -46,7 +46,10 @@ public partial class PanelWindow : Window
 
         Body.SizeChanged += (_, e) =>
         {
-            if (e.HeightChanged && IsVisible && !_hiding) ContentResized?.Invoke();
+            // Без проверки IsVisible: Show() раскладывает окно ещё до того, как оно станет видимым, и если
+            // содержимое выросло именно тогда (микшер заполнился уже после замера), рост терялся — низ панели
+            // обрезался. Свёрнутую панель обработчик в доке и так не двигает.
+            if (e.HeightChanged && !_hiding) ContentResized?.Invoke();
         };
     }
 
