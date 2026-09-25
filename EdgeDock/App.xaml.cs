@@ -88,7 +88,7 @@ public partial class App : Application
 
     private void OnFullscreenChanged(bool active)
     {
-        _dock.SetSuspended(active);
+        _dock.SetFullscreen(active);
         if (active) _health?.Suspend();
         else _health?.Resume();
     }

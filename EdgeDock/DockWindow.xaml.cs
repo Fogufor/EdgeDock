@@ -40,7 +40,9 @@ public partial class DockWindow : Window
     private DockMode _shownMode;
     private PixelRect _handleRect;
 
-    private bool _expanded, _suspended, _attention, _layoutScheduled;
+    private bool _expanded, _attention, _layoutScheduled;
+    private bool _fullscreen;      // на мониторе дока что-то на весь экран: полоска невидима, но ловит мышь
+    private bool _modulesAsleep;   // модулям сказали Suspend()
     private bool _hover, _pressed, _dragging;
     private Native.POINT _pressPoint;
     private int _grabX, _grabY;
@@ -91,6 +93,8 @@ public partial class DockWindow : Window
         }
         _tabs = _modules.Select(m => new PanelTab(m.Id, m.Title, (string)FindResource(m.TabGlyph))).ToList();
         _panel?.SetTabs(_tabs);
+        _modulesAsleep = false; // новые модули не спят
+        if (_fullscreen && !_expanded) SleepModules(true);
         UpdateAttention();
     }
 
@@ -179,7 +183,8 @@ public partial class DockWindow : Window
     private void ApplyShape(DockMode mode, DockEdge edge)
     {
         bool strip = mode == DockMode.Edge;
-        StripView.Visibility = strip ? Visibility.Visible : Visibility.Collapsed;
+        // На весь экран полоска невидима, но окно остаётся и ловит мышь (прозрачный фон Root).
+        StripView.Visibility = !strip ? Visibility.Collapsed : _fullscreen ? Visibility.Hidden : Visibility.Visible;
         PillView.Visibility = strip ? Visibility.Collapsed : Visibility.Visible;
         if (!strip) return;
 
@@ -210,7 +215,7 @@ public partial class DockWindow : Window
         UpdateVisual();
         _collapseTimer.Stop();
         // Разворот только после непрерывного наведения — случайное касание не срабатывает.
-        if (!_expanded && !_dragging && !_suspended) Restart(_expandTimer);
+        if (!_expanded && !_dragging) Restart(_expandTimer);
     }
 
     protected override void OnMouseLeave(MouseEventArgs e)
@@ -223,6 +228,12 @@ public partial class DockWindow : Window
 
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
     {
+        // На весь экран полоска невидима — тянуть её нельзя, панель открывается наведением.
+        if (_fullscreen)
+        {
+            e.Handled = true;
+            return;
+        }
         _expandTimer.Stop();
         _pressed = true;
         Native.GetCursorPos(out _pressPoint);
@@ -374,7 +385,7 @@ public partial class DockWindow : Window
     /// <summary>Потянули за заголовок развёрнутой панели: панель сворачивается, дальше тянется таблетка.</summary>
     private void OnHeaderDragStarted(Native.POINT p)
     {
-        if (_settings.State.Dock.Locked || _suspended) return;
+        if (_settings.State.Dock.Locked || _fullscreen) return;
         _pressed = true;
         CaptureMouse(); // кнопка всё ещё нажата — забираем мышь у панели
         BeginDrag(p, grabCenter: true);
@@ -387,11 +398,12 @@ public partial class DockWindow : Window
     /// <param name="tabId">Какую вкладку открыть; null — последнюю открытую (или первую).</param>
     private void Expand(string? tabId = null)
     {
-        if (_expanded || _suspended || _dragging || _monitor == null) return;
+        if (_expanded || _dragging || _monitor == null) return;
         _expandTimer.Stop();
 
         var panel = EnsurePanel();
         _expanded = true;
+        SleepModules(false); // на весь экран блоки спали — открытой панели они нужны
         _active = _modules.FirstOrDefault(m => m.Id == (tabId ?? _settings.State.Dock.Tab)) ?? _modules.FirstOrDefault();
         if (_active != null)
         {
@@ -500,8 +512,12 @@ public partial class DockWindow : Window
         UpdateVisual();
     }
 
-    // Засыпает только открытая вкладка: остальные и так не просыпались.
-    private void NotifyCollapsed() => _active?.OnCollapsed();
+    // Засыпает только открытая вкладка: остальные и так не просыпались. На весь экран — снова спят все.
+    private void NotifyCollapsed()
+    {
+        _active?.OnCollapsed();
+        if (_fullscreen) SleepModules(true);
+    }
 
     // ----- Команды из трея -----
 
@@ -522,15 +538,19 @@ public partial class DockWindow : Window
 
     // ----- Полноэкранный режим -----
 
-    /// <summary>Полноэкранное приложение на мониторе дока: спрятаться и полностью замереть.</summary>
-    public void SetSuspended(bool suspended)
+    /// <summary>
+    /// На мониторе дока что-то открыто на весь экран (игра, видео, презентация). Полоска у края становится невидимой,
+    /// но её место по-прежнему ловит мышь — панель открывается поверх, не забирая фокус; блоки спят, пока панель закрыта.
+    /// Таблетка в свободном месте прячется совсем: невидимая зона посреди экрана открывала бы панель случайно.
+    /// </summary>
+    public void SetFullscreen(bool fullscreen)
     {
-        if (_suspended == suspended) return;
-        _suspended = suspended;
+        if (_fullscreen == fullscreen) return;
+        _fullscreen = fullscreen;
         _expandTimer.Stop();
         _collapseTimer.Stop();
 
-        if (suspended)
+        if (fullscreen)
         {
             if (_dragging)
             {
@@ -544,14 +564,26 @@ public partial class DockWindow : Window
                 ReleaseMouseCapture();
             }
             CollapseNow();
-            foreach (var module in _modules) module.Suspend();
-            Hide();
+            SleepModules(true);
         }
-        else
+        else if (!_expanded)
         {
-            foreach (var module in _modules) module.Resume();
-            Show();
-            Layout();
+            SleepModules(false);
+        }
+        Layout(); // заодно заново поднимает полоску поверх всех окон: полноэкранные окна часто сами «поверх всех»
+        if (_fullscreen && _shownMode != DockMode.Edge) Hide();
+        else if (!IsVisible) Show();
+    }
+
+    /// <summary>Усыпить или разбудить все модули (на весь экран — спят, пока панель закрыта).</summary>
+    private void SleepModules(bool sleep)
+    {
+        if (_modulesAsleep == sleep) return;
+        _modulesAsleep = sleep;
+        foreach (var module in _modules)
+        {
+            if (sleep) module.Suspend();
+            else module.Resume();
         }
     }
 
