@@ -34,6 +34,7 @@
     <Duration x:Key="Motion.Expand">0:0:0.2</Duration>
     <Duration x:Key="Motion.Collapse">0:0:0.15</Duration>
     <Duration x:Key="Motion.Attention">0:0:0.6</Duration>
+    <Duration x:Key="Motion.TabSwitch">0:0:0.12</Duration>
     <sys:Double x:Key="Motion.SlideDistance">8</sys:Double>
 
     <!-- ===== Геометрия дока, в независимых от масштаба пикселях ===== -->
@@ -84,6 +85,11 @@
     <!-- Нижний отступ плашек (4) гасится, чтобы низ блока был как у остальных. -->
     <Thickness x:Key="Margin.ChipList">0,8,0,-4</Thickness>
     <sys:Double x:Key="Editor.Width">400</sys:Double>
+    <!-- Вкладки: колонка значков слева. Ширина колонки = отступ слева (8) + значок (36). -->
+    <sys:Double x:Key="Tab.Size">36</sys:Double>
+    <sys:Double x:Key="Tab.RailWidth">44</sys:Double>
+    <Thickness x:Key="Margin.TabRail">0,0,0,8</Thickness>
+    <Thickness x:Key="Margin.Tab">0,0,0,4</Thickness>
     <!-- Окно установки. -->
     <sys:Double x:Key="Setup.Width">520</sys:Double>
     <Thickness x:Key="Inset.Setup">24,16,24,24</Thickness>
@@ -122,6 +128,8 @@
     <sys:String x:Key="Glyph.Tag">&#xE8EC;</sys:String>
     <sys:String x:Key="Glyph.Text">&#xE8C8;</sys:String>
     <sys:String x:Key="Glyph.Check">&#xE73E;</sys:String>
+    <sys:String x:Key="Glyph.Pictures">&#xE91B;</sys:String>
+    <sys:String x:Key="Glyph.Pin">&#xE718;</sys:String>
 
     <!-- ===== Цвета: тёмная тема ===== -->
     <Color x:Key="Dark.Text.Primary">#FFFFFFFF</Color>

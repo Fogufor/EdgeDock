@@ -25,6 +25,10 @@ internal sealed class PocketModule : IDockModule, IDisposable
 
     public string Id => "pocket";
 
+    public string Title => "Карман";
+
+    public string TabGlyph => "Glyph.Pictures";
+
     public bool HasAttention => false;
 
     public event EventHandler? AttentionChanged

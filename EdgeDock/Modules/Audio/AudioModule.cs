@@ -78,6 +78,10 @@ internal sealed class AudioModule : IDockModule, IDisposable
 
     public string Id => "audio";
 
+    public string Title => "Звук";
+
+    public string TabGlyph => "Glyph.Speaker";
+
     public bool HasAttention => false;
 
     public event EventHandler? AttentionChanged

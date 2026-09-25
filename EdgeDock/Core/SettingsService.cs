@@ -47,7 +47,7 @@ public sealed class Settings
     public DockSettings Dock { get; set; } = new();
 
     /// <summary>Модули в порядке панели. Модуль, которого нет в списке, не загружается вообще.</summary>
-    public List<string> Modules { get; set; } = ["meeting", "pocket", "media", "audio", "pins"];
+    public List<string> Modules { get; set; } = ["meeting", "pocket", "media", "pins", "audio"];
 
     public PocketSettings Pocket { get; set; } = new();
 

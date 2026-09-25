@@ -23,6 +23,9 @@ public sealed class DockState
     public double X { get; set; } = 0.5;
     public double Y { get; set; } = 0.0;
     public bool Locked { get; set; }
+
+    /// <summary>Id модуля последней открытой вкладки панели.</summary>
+    public string? Tab { get; set; }
 }
 
 /// <summary>Прямоугольник в физических пикселях экрана.</summary>
@@ -245,6 +248,18 @@ public sealed class PlacementService
         x = Math.Clamp(x, work.Left + gap, work.Right - gap - width);
         y = Math.Clamp(y, work.Top + gap, work.Bottom - gap - height);
         return (new PixelRect(x, y, width, height), slideX, slideY);
+    }
+
+    /// <summary>
+    /// Открытая панель меняет высоту (другая вкладка, выросло содержимое): верхний край остаётся на месте,
+    /// чтобы значки вкладок не уезжали из-под мыши. Не помещается — поднять ровно настолько, чтобы не выйти за рабочую область.
+    /// </summary>
+    public PixelRect KeepTop(PixelRect wanted, int top, MonitorInfo mon)
+    {
+        var work = mon.Work;
+        int gap = Px(_panelGap, mon);
+        int highest = work.Top + gap, lowest = Math.Max(highest, work.Bottom - gap - wanted.Height);
+        return wanted with { Top = Math.Clamp(top, highest, lowest) };
     }
 
     private static int Along(int start, int length, double fraction) => start + (int)Math.Round(fraction * length);

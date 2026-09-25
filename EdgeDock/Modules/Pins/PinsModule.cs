@@ -42,6 +42,10 @@ internal sealed class PinsModule : IDockModule, INotifyPropertyChanged, IDisposa
 
     public string Id => "pins";
 
+    public string Title => "Закреплённое";
+
+    public string TabGlyph => "Glyph.Pin";
+
     public bool HasAttention => false;
 
     public event EventHandler? AttentionChanged

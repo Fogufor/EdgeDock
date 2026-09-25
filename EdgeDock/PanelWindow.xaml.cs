@@ -26,6 +26,12 @@ public partial class PanelWindow : Window
     /// <summary>Высота содержимого изменилась, пока панель открыта.</summary>
     public event Action? ContentResized;
 
+    /// <summary>Нажали значок вкладки (id модуля).</summary>
+    public event Action<string>? TabClicked;
+
+    /// <summary>Над панелью тащат файл или картинку — DockWindow открывает «Карман».</summary>
+    public event Action? FileDragEntered;
+
     /// <summary>Нажали на заголовок и потянули: DockWindow забирает мышь и продолжает перетаскивание.</summary>
     public event Action<Native.POINT>? HeaderDragStarted;
 
@@ -53,13 +59,25 @@ public partial class PanelWindow : Window
         };
     }
 
-    public UIElementCollection ModuleViews => ModuleHost.Children;
+    /// <summary>Значки вкладок слева, в порядке модулей.</summary>
+    public void SetTabs(IReadOnlyList<PanelTab> tabs) => Tabs.ItemsSource = tabs;
 
-    /// <summary>Добавить блок модуля; между блоками — отступ из токенов.</summary>
-    public void AddModuleView(FrameworkElement view)
+    /// <summary>Показать блок вкладки, остальные скрыть. Новый блок добавляется при первом показе. fade — содержимое проявляется.</summary>
+    public void ShowView(FrameworkElement view, bool fade)
     {
-        if (ModuleHost.Children.Count > 0) view.Margin = (Thickness)FindResource("Margin.Top.S");
-        ModuleHost.Children.Add(view);
+        if (!ModuleHost.Children.Contains(view)) ModuleHost.Children.Add(view);
+        foreach (UIElement child in ModuleHost.Children)
+            child.Visibility = child == view ? Visibility.Visible : Visibility.Collapsed;
+        if (fade)
+            Animate(view, OpacityProperty, 0, 1, (Duration)FindResource("Motion.TabSwitch"), new CubicEase { EasingMode = EasingMode.EaseOut });
+    }
+
+    /// <summary>Убрать все блоки (модули пересоздаются по «Перезагрузить настройки»).</summary>
+    public void ClearViews() => ModuleHost.Children.Clear();
+
+    private void OnTabClick(object sender, RoutedEventArgs e)
+    {
+        if (((FrameworkElement)sender).DataContext is PanelTab tab) TabClicked?.Invoke(tab.Id);
     }
 
     /// <summary>Переставить открытую панель (без анимации) — например, когда выросло содержимое.</summary>
@@ -188,7 +206,11 @@ public partial class PanelWindow : Window
 
     // Перетаскивание над панелью: следим через Preview-события — они доходят до окна раньше,
     // чем модуль (например, карман) обработает само перетаскивание.
-    protected override void OnPreviewDragEnter(DragEventArgs e) => PointerEntered?.Invoke();
+    protected override void OnPreviewDragEnter(DragEventArgs e)
+    {
+        PointerEntered?.Invoke();
+        FileDragEntered?.Invoke();
+    }
 
     protected override void OnPreviewDragLeave(DragEventArgs e) => PointerLeft?.Invoke();
 

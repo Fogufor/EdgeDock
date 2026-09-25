@@ -1,10 +1,12 @@
 <!--
   Развёрнутая панель. Фон — системный акрил DWM (его включает код), сама разметка прозрачная.
   Содержимое (Body) проявляется и выезжает через Opacity и RenderTransform.
+  Слева — колонка значков вкладок, справа — блок открытой вкладки (модули показываются по одному).
 -->
 <Window x:Class="EdgeDock.PanelWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:EdgeDock"
         Title="EdgeDock"
         WindowStyle="None"
         ResizeMode="NoResize"
@@ -20,6 +22,46 @@
         Foreground="{DynamicResource Brush.Text.Primary}"
         TextOptions.TextFormattingMode="Display">
 
+    <Window.Resources>
+        <!-- Значок вкладки — как пункт навигации Windows 11: заливка при наведении, у открытой ещё и акцентная черта слева. -->
+        <Style x:Key="TabButton" TargetType="Button">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Width" Value="{StaticResource Tab.Size}" />
+            <Setter Property="Height" Value="{StaticResource Tab.Size}" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="Transparent">
+                            <Border x:Name="Fill" CornerRadius="{StaticResource Radius.Small}" />
+                            <Border x:Name="Indicator" HorizontalAlignment="Left" Visibility="Collapsed"
+                                    Width="{StaticResource Indicator.Width}" Height="{StaticResource Indicator.Height}"
+                                    CornerRadius="{StaticResource Radius.Strip}" Background="{DynamicResource Brush.Accent}" />
+                            <TextBlock x:Name="Glyph" Text="{Binding Glyph}" FontFamily="{StaticResource Font.Icons}"
+                                       FontSize="{StaticResource FontSize.IconLarge}" Foreground="{DynamicResource Brush.Text.Secondary}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Brush.Subtle.Hover}" />
+                                <Setter TargetName="Glyph" Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+                            </Trigger>
+                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Brush.Subtle.Hover}" />
+                                <Setter TargetName="Indicator" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="Glyph" Property="Foreground" Value="{DynamicResource Brush.Text.Primary}" />
+                            </DataTrigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Fill" Property="Background" Value="{DynamicResource Brush.Subtle.Pressed}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <Grid x:Name="Root" Background="Transparent">
         <Grid x:Name="Body" Opacity="0" VerticalAlignment="Top">
             <Grid.RenderTransform>
@@ -29,18 +71,35 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
             <!-- Ручка-заголовок: за неё панель перетаскивается. -->
-            <Border x:Name="Header" Height="{StaticResource Panel.HeaderHeight}" Background="Transparent">
+            <Border x:Name="Header" Grid.ColumnSpan="2" Height="{StaticResource Panel.HeaderHeight}" Background="Transparent">
                 <Border x:Name="HeaderGrip"
                         Width="{StaticResource Panel.GripLength}" Height="{StaticResource Strip.Thickness}"
                         CornerRadius="{StaticResource Radius.Strip}"
                         Background="{DynamicResource Brush.Handle.Rest}" />
             </Border>
 
-            <StackPanel x:Name="ModuleHost" Grid.Row="1" Margin="{StaticResource Inset.PanelBody}" />
+            <!-- Вкладки: по значку на модуль, сверху вниз. -->
+            <ItemsControl x:Name="Tabs" Grid.Row="1" Width="{StaticResource Tab.RailWidth}"
+                          Margin="{StaticResource Margin.TabRail}" VerticalAlignment="Top" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type local:PanelTab}">
+                        <Button Style="{StaticResource TabButton}" Margin="{StaticResource Margin.Tab}" ToolTip="{Binding Title}"
+                                AutomationProperties.Name="{Binding Title}" AutomationProperties.AutomationId="{Binding AutomationId}"
+                                Click="OnTabClick" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
 
-            <TextBlock x:Name="EmptyText" Grid.Row="1" Margin="{StaticResource Inset.PanelBody}"
+            <!-- Блок открытой вкладки; остальные созданные блоки здесь же, но скрыты. -->
+            <Grid x:Name="ModuleHost" Grid.Row="1" Grid.Column="1" Margin="{StaticResource Inset.PanelBody}" />
+
+            <TextBlock x:Name="EmptyText" Grid.Row="1" Grid.Column="1" Margin="{StaticResource Inset.PanelBody}"
                        Text="Модулей пока нет"
                        FontSize="{StaticResource FontSize.Caption}"
                        Foreground="{DynamicResource Brush.Text.Secondary}"

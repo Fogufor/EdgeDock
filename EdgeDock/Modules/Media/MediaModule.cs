@@ -157,6 +157,10 @@ internal sealed class MediaModule : IDockModule, IDisposable
 
     public string Id => "media";
 
+    public string Title => "Музыка";
+
+    public string TabGlyph => "Glyph.Music";
+
     public bool HasAttention => false;
 
     public event EventHandler? AttentionChanged

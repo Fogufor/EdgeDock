@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -24,6 +25,10 @@ public partial class DockWindow : Window
     private readonly DispatcherTimer _expandTimer = new();
     private readonly DispatcherTimer _collapseTimer = new();
     private readonly List<IDockModule> _modules = [];
+    private readonly Dictionary<IDockModule, FrameworkElement> _views = [];
+    private List<PanelTab> _tabs = [];
+    private IDockModule? _active;       // модуль открытой вкладки
+    private PixelRect _panelRect;       // где панель сейчас (в том числе пока Show() ещё не сделал её видимой)
 
     private IntPtr _hwnd;
     private PanelWindow? _panel;
@@ -35,7 +40,7 @@ public partial class DockWindow : Window
     private DockMode _shownMode;
     private PixelRect _handleRect;
 
-    private bool _expanded, _suspended, _attention, _layoutScheduled, _viewsCreated;
+    private bool _expanded, _suspended, _attention, _layoutScheduled;
     private bool _hover, _pressed, _dragging;
     private Native.POINT _pressPoint;
     private int _grabX, _grabY;
@@ -73,8 +78,9 @@ public partial class DockWindow : Window
     {
         foreach (var module in _modules) (module as IDisposable)?.Dispose();
         _modules.Clear();
-        _panel?.ModuleViews.Clear();
-        _viewsCreated = false;
+        _views.Clear();
+        _active = null;
+        _panel?.ClearViews();
 
         foreach (string id in _settings.Settings.Modules)
         {
@@ -83,6 +89,8 @@ public partial class DockWindow : Window
             module.AttentionChanged += (_, _) => UpdateAttention();
             _modules.Add(module);
         }
+        _tabs = _modules.Select(m => new PanelTab(m.Id, m.Title, (string)FindResource(m.TabGlyph))).ToList();
+        _panel?.SetTabs(_tabs);
         UpdateAttention();
     }
 
@@ -267,13 +275,14 @@ public partial class DockWindow : Window
         UpdateVisual();
     }
 
-    // Перетаскивание файла на полоску: разворот сразу, без задержки.
+    // Перетаскивание файла на полоску: разворот сразу, без задержки, и сразу «Карман» — файлы принимает только полка.
     protected override void OnDragEnter(DragEventArgs e)
     {
         e.Effects = DragDropEffects.None;
         e.Handled = true;
         _collapseTimer.Stop();
-        Expand();
+        Expand("pocket");
+        ShowTab("pocket");
     }
 
     protected override void OnDragOver(DragEventArgs e)
@@ -375,30 +384,72 @@ public partial class DockWindow : Window
 
     // ----- Панель -----
 
-    private void Expand()
+    /// <param name="tabId">Какую вкладку открыть; null — последнюю открытую (или первую).</param>
+    private void Expand(string? tabId = null)
     {
         if (_expanded || _suspended || _dragging || _monitor == null) return;
         _expandTimer.Stop();
 
         var panel = EnsurePanel();
-        if (!_viewsCreated)
-        {
-            // Интерфейс модулей создаётся один раз — при первом разворачивании.
-            foreach (var module in _modules) panel.AddModuleView(module.CreateView());
-            _viewsCreated = true;
-        }
-
         _expanded = true;
-        foreach (var module in _modules) module.OnExpanded();
+        _active = _modules.FirstOrDefault(m => m.Id == (tabId ?? _settings.State.Dock.Tab)) ?? _modules.FirstOrDefault();
+        if (_active != null)
+        {
+            panel.ShowView(ViewOf(_active), fade: false);
+            _active.OnExpanded();
+        }
+        MarkActiveTab();
 
         var (rect, slideX, slideY) = PanelPlacement();
+        _panelRect = rect;
         panel.ShowAt(rect, slideX, slideY);
         UpdateVisual();
     }
 
+    /// <summary>Интерфейс модуля: создаётся при первом открытии его вкладки.</summary>
+    private FrameworkElement ViewOf(IDockModule module)
+    {
+        if (_views.TryGetValue(module, out var view)) return view;
+        view = module.CreateView();
+        AutomationProperties.SetAutomationId(view, "View." + module.Id);
+        _views[module] = view;
+        return view;
+    }
+
+    /// <summary>Открыть вкладку в развёрнутой панели: прежний модуль засыпает, новый просыпается, высота — по новому блоку.</summary>
+    private void ShowTab(string id)
+    {
+        var module = _modules.FirstOrDefault(m => m.Id == id);
+        if (!_expanded || module == null || module == _active) return;
+        _active?.OnCollapsed();
+        _active = module;
+        _panel!.ShowView(ViewOf(module), fade: true);
+        module.OnExpanded();
+        MarkActiveTab();
+        ResizePanel();
+    }
+
+    /// <summary>Отметить открытую вкладку и запомнить её в state.json (только если сменилась).</summary>
+    private void MarkActiveTab()
+    {
+        foreach (var tab in _tabs) tab.IsActive = tab.Id == _active?.Id;
+        if (_active == null || _settings.State.Dock.Tab == _active.Id) return;
+        _settings.State.Dock.Tab = _active.Id;
+        _settings.SaveState();
+    }
+
+    /// <summary>Открытая панель меняет высоту (другая вкладка, выросло содержимое): верхний край на месте.</summary>
+    private void ResizePanel()
+    {
+        if (!_expanded || _dragging || _monitor == null || _panel == null) return;
+        _panelRect = _placement.KeepTop(PanelPlacement().Rect, _panelRect.Top, _monitor);
+        _panel.MoveTo(_panelRect);
+    }
+
     private (PixelRect Rect, int SlideX, int SlideY) PanelPlacement()
     {
-        double width = _settings.Settings.Dock.Width;
+        // Ширина содержимого — из настроек; панель шире на колонку значков вкладок.
+        double width = _settings.Settings.Dock.Width + (double)FindResource("Tab.RailWidth");
         return _placement.PanelRect(_shownMode, _settings.State.Dock.Edge, _monitor!, _handleRect,
             width, _panel!.MeasureHeight(width));
     }
@@ -408,14 +459,14 @@ public partial class DockWindow : Window
         if (_panel != null) return _panel;
 
         _panel = new PanelWindow { IsLocked = () => _settings.State.Dock.Locked };
+        _panel.SetTabs(_tabs);
+        _panel.TabClicked += ShowTab;
+        _panel.FileDragEntered += () => ShowTab("pocket");
         _panel.PointerEntered += () => _collapseTimer.Stop();
         _panel.PointerLeft += () => { if (_expanded) Restart(_collapseTimer); };
         _panel.HeaderDragStarted += OnHeaderDragStarted;
-        _panel.ContentResized += () =>
-        {
-            // Содержимое выросло или уменьшилось (новый снимок, файл на полке) — подгоняем размер окна.
-            if (_expanded && !_dragging && _monitor != null) _panel.MoveTo(PanelPlacement().Rect);
-        };
+        // Содержимое выросло или уменьшилось (новый снимок, файл на полке) — подгоняем размер окна.
+        _panel.ContentResized += ResizePanel;
         return _panel;
     }
 
@@ -449,10 +500,8 @@ public partial class DockWindow : Window
         UpdateVisual();
     }
 
-    private void NotifyCollapsed()
-    {
-        foreach (var module in _modules) module.OnCollapsed();
-    }
+    // Засыпает только открытая вкладка: остальные и так не просыпались.
+    private void NotifyCollapsed() => _active?.OnCollapsed();
 
     // ----- Команды из трея -----
 
