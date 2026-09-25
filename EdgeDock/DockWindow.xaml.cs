@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using EdgeDock.Core;
 using EdgeDock.Modules.Audio;
 using EdgeDock.Modules.Media;
+using EdgeDock.Modules.Pins;
 using EdgeDock.Modules.Pocket;
 
 namespace EdgeDock;
@@ -63,6 +64,7 @@ public partial class DockWindow : Window
         "pocket" => new PocketModule(_settings),
         "media" => new MediaModule(),
         "audio" => new AudioModule(_settings),
+        "pins" => new PinsModule(),
         _ => null,
     };
 

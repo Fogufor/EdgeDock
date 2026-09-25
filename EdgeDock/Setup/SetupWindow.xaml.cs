@@ -1,7 +1,5 @@
 using System.IO;
 using System.Windows;
-using System.Windows.Interop;
-using System.Windows.Media;
 using EdgeDock.Core;
 using Microsoft.Win32;
 
@@ -21,19 +19,7 @@ public partial class SetupWindow : Window
         FolderBox.Text = installed ?? Installer.DefaultFolder;
         if (installed != null) InstallButton.Content = "Обновить и запустить";
 
-        SourceInitialized += (_, _) => ApplyBackdrop();
-    }
-
-    /// <summary>Фон Mica, как у окон Windows 11, в тон текущей теме.</summary>
-    private void ApplyBackdrop()
-    {
-        var hwnd = new WindowInteropHelper(this).Handle;
-        HwndSource.FromHwnd(hwnd).CompositionTarget.BackgroundColor = Colors.Transparent;
-        var margins = new Native.MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
-        Native.DwmExtendFrameIntoClientArea(hwnd, ref margins);
-        Native.SetDwm(hwnd, Native.DWMWA_USE_IMMERSIVE_DARK_MODE, ThemeService.IsDark ? 1 : 0);
-        if (Native.SetDwm(hwnd, Native.DWMWA_SYSTEMBACKDROP_TYPE, Native.DWMSBT_MAINWINDOW) != 0)
-            SetResourceReference(BackgroundProperty, "Brush.Window.Fallback");
+        SourceInitialized += (_, _) => WindowBackdrop.Apply(this);
     }
 
     private void OnBrowse(object sender, RoutedEventArgs e)

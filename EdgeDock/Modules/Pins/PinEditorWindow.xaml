@@ -1,0 +1,42 @@
+<!--
+  Добавление и правка закреплённого. Обычное окно Windows 11 (фон Mica включает код): в нём можно печатать,
+  а панель дока фокус не забирает. Enter — сохранить, Esc — закрыть.
+-->
+<Window x:Class="EdgeDock.Modules.Pins.PinEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="Новый элемент"
+        Width="{StaticResource Editor.Width}"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        Background="Transparent"
+        FontFamily="{StaticResource Font.Text}"
+        FontSize="{StaticResource FontSize.Body}"
+        Foreground="{DynamicResource Brush.Text.Primary}"
+        TextOptions.TextFormattingMode="Display">
+
+    <StackPanel Margin="{StaticResource Inset.Setup}">
+        <TextBlock Text="Название" />
+        <TextBox x:Name="LabelBox" Margin="{StaticResource Margin.Top.S}" MaxLength="60"
+                 TextChanged="OnTextChanged" AutomationProperties.AutomationId="PinLabel" />
+
+        <TextBlock Text="Что копировать" Margin="{StaticResource Margin.Top.M}" />
+        <TextBox x:Name="ValueBox" Margin="{StaticResource Margin.Top.S}" MaxLength="2000"
+                 TextChanged="OnTextChanged" AutomationProperties.AutomationId="PinValue" />
+        <TextBlock Style="{StaticResource Caption}" Margin="{StaticResource Margin.Top.S}" TextWrapping="Wrap"
+                   Text="Ссылка, тег, телефон — что угодно. Нажатие на название в панели скопирует это." />
+
+        <Grid Margin="{StaticResource Margin.Top.L}">
+            <ui:Button x:Name="DeleteButton" Content="Удалить" HorizontalAlignment="Left" Visibility="Collapsed"
+                       Click="OnDelete" AutomationProperties.AutomationId="PinDelete" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ui:Button Content="Отмена" IsCancel="True" Click="OnCancel" AutomationProperties.AutomationId="PinCancel" />
+                <ui:Button x:Name="SaveButton" Content="Сохранить" Appearance="Primary" IsDefault="True" IsEnabled="False"
+                           Margin="{StaticResource Margin.Left.S}" Click="OnSave" AutomationProperties.AutomationId="PinSave" />
+            </StackPanel>
+        </Grid>
+    </StackPanel>
+</Window>

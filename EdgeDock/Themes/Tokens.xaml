@@ -78,6 +78,12 @@
     <sys:Double x:Key="Mixer.NameWidth">96</sys:Double>
     <Thickness x:Key="Inset.Chip">8,0,8,0</Thickness>
     <Thickness x:Key="Margin.Right.XS">0,0,4,0</Thickness>
+    <!-- Закреплённое: плашки с переносом строк, окно правки. -->
+    <sys:Double x:Key="Pin.LabelMaxWidth">140</sys:Double>
+    <Thickness x:Key="Margin.Chip">0,0,4,4</Thickness>
+    <!-- Нижний отступ плашек (4) гасится, чтобы низ блока был как у остальных. -->
+    <Thickness x:Key="Margin.ChipList">0,8,0,-4</Thickness>
+    <sys:Double x:Key="Editor.Width">400</sys:Double>
     <!-- Окно установки. -->
     <sys:Double x:Key="Setup.Width">520</sys:Double>
     <Thickness x:Key="Inset.Setup">24,16,24,24</Thickness>
@@ -111,6 +117,11 @@
     <sys:String x:Key="Glyph.Volume1">&#xE993;</sys:String>
     <sys:String x:Key="Glyph.Volume2">&#xE994;</sys:String>
     <sys:String x:Key="Glyph.Volume3">&#xE995;</sys:String>
+    <sys:String x:Key="Glyph.Add">&#xE710;</sys:String>
+    <sys:String x:Key="Glyph.Link">&#xE71B;</sys:String>
+    <sys:String x:Key="Glyph.Tag">&#xE8EC;</sys:String>
+    <sys:String x:Key="Glyph.Text">&#xE8C8;</sys:String>
+    <sys:String x:Key="Glyph.Check">&#xE73E;</sys:String>
 
     <!-- ===== Цвета: тёмная тема ===== -->
     <Color x:Key="Dark.Text.Primary">#FFFFFFFF</Color>
