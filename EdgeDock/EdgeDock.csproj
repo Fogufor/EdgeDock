@@ -10,7 +10,7 @@
     <AssemblyName>EdgeDock</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Версию для релиза подставляет сборка на GitHub (из тега v1.2.3). -->
-    <Version>1.4.1</Version>
+    <Version>1.5.0</Version>
 
     <!-- Виджет работает весь день: без фонового потока сборщика мусора и без папок локализации. -->
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
