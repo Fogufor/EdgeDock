@@ -49,6 +49,10 @@ async function ensureContentScripts() {
     try {
       await chrome.tabs.sendMessage(tab.id, { type: 'ping' });
     } catch (e) {
+      // page.js — в мир самой страницы (позиция и перемотка от плеера), content.js — в мир расширения.
+      try {
+        await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['page.js'], world: 'MAIN' });
+      } catch (e2) { /* без page.js content.js возьмёт время с ползунка плеера */ }
       chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] }).catch(() => {});
     }
   }

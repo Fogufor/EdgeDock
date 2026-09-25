@@ -1,6 +1,6 @@
 // EdgeDock, вкладка Яндекс Музыки.
-// Читает, что играет, из Media Session (её заполняет сам плеер Яндекс Музыки), позицию — из полоски
-// перемотки плеера, лайк — из кнопки «Нравится», и отдаёт это фоновому скрипту.
+// Читает, что играет, из Media Session (её заполняет сам плеер Яндекс Музыки), позицию и длину — из того,
+// что плеер сообщает браузеру (это подслушивает page.js), лайк — из кнопки «Нравится», и отдаёт это фоновому скрипту.
 // Кнопки, перемотку и лайк из виджета выполняет на странице так же, как если бы нажали вы.
 //
 // Скрипт может оказаться во вкладке дважды: браузер встраивает его при загрузке страницы, а фоновый скрипт —
@@ -24,6 +24,17 @@
 
   const token = `${Date.now()}-${Math.random()}`;
   window.__edgedockContent = token;
+
+  // Позиция и длина, которые плеер сообщил браузеру; присылает page.js. Пока не сообщил — null.
+  let reported = null;
+  window.addEventListener('edgedock-position', event => {
+    try {
+      reported = JSON.parse(event.detail);
+    } catch (e) {
+      reported = null;
+    }
+  });
+  window.dispatchEvent(new Event('edgedock-position-request'));
 
   const artworkCache = new Map();
   let lastKey = '';
@@ -83,26 +94,45 @@
     return parts.reduce((total, part) => total * 60 + part, 0);
   }
 
-  // Полоска перемотки плеера: позиция и длина трека в секундах. Длину берём из подписи «1:23 / 3:45»,
-  // а точную позицию — из положения ползунка (его шкала может быть и в секундах, и в миллисекундах).
-  function timeline() {
+  // Позиция и длина трека в секундах. Главное — то, что плеер сам сообщает браузеру (присылает page.js):
+  // так не важно, какая панель плеера на экране. Пока плеер ничего не сообщил (вкладку подхватили на паузе) —
+  // ползунок перемотки плеера.
+  function timeline(playing) {
+    if (reported) {
+      const elapsed = playing ? (Date.now() - reported.at) / 1000 * reported.rate : 0;
+      return {
+        position: Math.min(reported.duration, reported.position + elapsed),
+        duration: reported.duration,
+        canSeek: reported.canSeek === true,
+      };
+    }
+    const line = slider();
+    return line && { position: line.position, duration: line.duration, canSeek: usable(line.input) };
+  }
+
+  // Ползунок перемотки плеера. Его шкала — секунды, max — длина трека. В подписи обычно только текущее время
+  // («1:23»), а в «Моей волне» — «1:23 / 3:45»; если длина там есть, берём её, а позицию — по положению ползунка.
+  function slider() {
     const bar = playerBar();
     const input = (bar && findIn(bar, TIMELINE)) || findIn(document, TIMELINE);
     if (!input) return null;
 
-    const [shown, total] = String(input.getAttribute('aria-valuetext') || '').split('/').map(toSeconds);
+    const total = toSeconds(String(input.getAttribute('aria-valuetext') || '').split('/')[1]);
     const max = Number(input.max) || 0;
     const value = Number(input.value) || 0;
-    const duration = total > 0 ? total : 0;
-    if (duration <= 0) return null;
-
-    const position = max > 0 ? value / max * duration : (shown >= 0 ? shown : 0);
-    return { input, position, duration, scale: max > 0 ? max / duration : 1 };
+    const duration = total > 0 ? total : max;
+    if (duration <= 0 || max <= 0) return null;
+    return { input, position: value / max * duration, duration, scale: max / duration };
   }
 
-  // Перемотка тем же ползунком плеера: ставим значение и сообщаем странице, как при движении мышью.
+  // Перемотка — так же, как медиакнопками браузера (через page.js). Если плеер о себе ещё не сообщил —
+  // его же ползунком: ставим значение и сообщаем странице, как при движении мышью.
   function seek(seconds) {
-    const line = timeline();
+    if (reported && reported.canSeek === true) {
+      window.dispatchEvent(new CustomEvent('edgedock-seek', { detail: String(seconds) }));
+      return;
+    }
+    const line = slider();
     if (!line || !usable(line.input)) return;
     const target = Math.max(0, Math.min(line.duration, seconds)) * line.scale;
     const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
@@ -184,11 +214,11 @@
     } catch (e) { /* кнопки не нашлись — просто неактивны */ }
 
     try {
-      const line = timeline();
+      const line = timeline(playing);
       if (line) {
         state.position = line.position;
         state.duration = line.duration;
-        state.canSeek = usable(line.input);
+        state.canSeek = line.canSeek;
       }
     } catch (e) { /* без полоски времени */ }
 
