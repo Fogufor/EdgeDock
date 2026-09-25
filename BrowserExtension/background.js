@@ -1,10 +1,23 @@
 // EdgeDock, фоновый скрипт.
 // Собирает состояние со всех вкладок Яндекс Музыки, выбирает ту, что играет (или играла последней),
 // и передаёт её виджету по WebSocket на 127.0.0.1. Обратно получает кнопки, перемотку и лайк.
+//
+// Чтобы ничего не приходилось делать руками:
+// * при каждом запуске встраивается во вкладки Яндекс Музыки, открытые до установки, включения или обновления
+//   расширения (браузер сам этого не делает — раньше помогало только F5);
+// * называет виджету свою версию; если у виджета расширение новее, по его просьбе перезагружается
+//   и перечитывает свои файлы с диска.
 'use strict';
 
 const WIDGET_URL = 'ws://127.0.0.1:48620/'; // порт должен совпадать с BrowserMusicBridge.Port в виджете
 const RETRY_MS = 10000;                     // виджет не запущен — пробуем подключиться не чаще раза в 10 с
+const MUSIC_TABS = [                        // те же адреса, что в content_scripts манифеста
+  'https://music.yandex.ru/*',
+  'https://music.yandex.com/*',
+  'https://music.yandex.by/*',
+  'https://music.yandex.kz/*',
+  'https://music.yandex.uz/*',
+];
 
 const tabs = new Map(); // id вкладки → { state, playedAt }
 let socket = null;
@@ -23,6 +36,25 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 chrome.tabs.onRemoved.addListener(tabId => {
   if (tabs.delete(tabId)) sync(true);
 });
+
+// Вкладки, открытые раньше, чем заработало расширение: если в них нет рабочего скрипта — встраиваем.
+async function ensureContentScripts() {
+  let open = [];
+  try {
+    open = await chrome.tabs.query({ url: MUSIC_TABS });
+  } catch (e) {
+    return;
+  }
+  for (const tab of open) {
+    try {
+      await chrome.tabs.sendMessage(tab.id, { type: 'ping' });
+    } catch (e) {
+      chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] }).catch(() => {});
+    }
+  }
+}
+
+ensureContentScripts();
 
 // Вкладка, которая играет; если ни одна не играет — та, что играла последней.
 function current() {
@@ -58,6 +90,7 @@ function connect() {
   const ws = new WebSocket(WIDGET_URL);
   socket = ws;
   ws.onopen = () => {
+    ws.send(JSON.stringify({ type: 'hello', version: chrome.runtime.getManifest().version }));
     lastKey = null;
     sync(true);
   };
@@ -71,6 +104,11 @@ function connect() {
     try {
       message = JSON.parse(event.data);
     } catch (e) {
+      return;
+    }
+    if (message.type === 'reload') {
+      // Виджет обновился и привёз новую версию расширения — перечитываем файлы с диска.
+      chrome.runtime.reload();
       return;
     }
     const best = current();

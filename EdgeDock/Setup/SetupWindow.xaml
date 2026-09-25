@@ -62,8 +62,6 @@
                                Text="2. Включите «Режим разработчика» вверху страницы." />
                     <TextBlock Margin="{StaticResource Margin.Top.S}" TextWrapping="Wrap"
                                Text="3. Нажмите «Загрузить распакованное расширение», вставьте путь (Ctrl+V) в строку адреса окна и нажмите «Выбор папки»." />
-                    <TextBlock Margin="{StaticResource Margin.Top.S}" TextWrapping="Wrap"
-                               Text="4. Обновите вкладку Яндекс Музыки (F5)." />
                     <ui:Button Content="Открыть страницу расширений" Margin="{StaticResource Margin.Top.M}" Click="OnOpenExtensions" />
                     <TextBlock x:Name="ExtensionHint" Style="{StaticResource Caption}" Margin="{StaticResource Margin.Top.S}"
                                TextWrapping="Wrap" Visibility="Collapsed" />

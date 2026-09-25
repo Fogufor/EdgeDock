@@ -35,6 +35,7 @@ internal sealed class BrowserMusicBridge : IDisposable
 
     private readonly Dispatcher _ui;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
+    private readonly HashSet<string> _reloadRequested = [];
     private TcpListener? _listener;
     private CancellationTokenSource? _stop;
     private WebSocket? _socket;
@@ -73,11 +74,14 @@ internal sealed class BrowserMusicBridge : IDisposable
     }
 
     /// <summary>Команда из виджета: "previous", "playPause", "next", "like" или "seek" (с позицией в секундах).</summary>
-    public async void Send(string command, double position = 0)
+    public void Send(string command, double position = 0) =>
+        _ = SendJson(new { type = "command", command, position });
+
+    private async Task SendJson(object message)
     {
         var socket = _socket;
         if (socket?.State != WebSocketState.Open) return;
-        byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(new { type = "command", command, position });
+        byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(message);
         await _sendLock.WaitAsync();
         try
         {
@@ -221,6 +225,9 @@ internal sealed class BrowserMusicBridge : IDisposable
             var root = document.RootElement;
             switch (Text(root, "type"))
             {
+                case "hello":
+                    RequestReloadIfOutdated(Text(root, "version"));
+                    break;
                 case "none":
                     Raise(null);
                     break;
@@ -236,6 +243,40 @@ internal sealed class BrowserMusicBridge : IDisposable
         catch (JsonException)
         {
             // Непонятное сообщение просто пропускаем.
+        }
+    }
+
+    /// <summary>
+    /// Расширение браузер держит в памяти, пока его не перезагрузят. Если виджет привёз более новую версию,
+    /// просим расширение перезагрузиться — оно перечитает файлы с диска само, без походов в browser://extensions.
+    /// Один раз на версию: если на диске всё ещё старые файлы, не зацикливаемся.
+    /// </summary>
+    private void RequestReloadIfOutdated(string reported)
+    {
+        if (!Version.TryParse(reported, out var current) || BundledExtensionVersion is not Version bundled || current >= bundled) return;
+        lock (_reloadRequested)
+        {
+            if (!_reloadRequested.Add(reported)) return;
+        }
+        _ = SendJson(new { type = "reload" });
+    }
+
+    /// <summary>Версия расширения, которое лежит внутри exe (его раскладывает установщик).</summary>
+    private static readonly Version? BundledExtensionVersion = ReadBundledVersion();
+
+    private static Version? ReadBundledVersion()
+    {
+        try
+        {
+            using var stream = typeof(BrowserMusicBridge).Assembly.GetManifestResourceStream("BrowserExtension/manifest.json");
+            if (stream == null) return null;
+            using var manifest = JsonDocument.Parse(stream);
+            return Version.TryParse(manifest.RootElement.GetProperty("version").GetString(), out var version) ? version : null;
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Не удалось прочитать версию встроенного расширения.", ex);
+            return null;
         }
     }
 

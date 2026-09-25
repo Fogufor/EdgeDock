@@ -1,9 +1,17 @@
 {
   "manifest_version": 3,
   "name": "EdgeDock — Яндекс Музыка",
-  "version": "1.1",
+  "version": "1.2",
   "description": "Показывает в виджете EdgeDock, что играет в Яндекс Музыке, и передаёт на страницу кнопки плеера, перемотку и лайк из виджета.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsyoMeCeFav3vjAXneFdS2ymB1IA/BuSWoRmebniQsGBXlHcgfewO3RaQ6T/wj5cHD7X7PLo5RNM+Uri8VcJFtegSWbjfjw2Ai48kQuPvXyTvWX+4Vuts/Qs4WceAJrvzv0FD2WBAIEMjwGoyo32u8k67fTRrrslJqz1sF2dr9ZvuRXQdqApwxjad1sMejaSoA+t0CBOYXq2cPEc+Xbuo5kEX50r8gCd3mD7USzUyuTos46p2VtY89ArS3VXqKyQfAa8LvFYYMZ3tpvM3uawQGE1V5Bzzoxs2a497TerfMaaD/t2K16GFnYOXu98mcq2340wRoEslSFo6Q9uWP1VgAQIDAQAB",
+  "permissions": ["scripting"],
+  "host_permissions": [
+    "https://music.yandex.ru/*",
+    "https://music.yandex.com/*",
+    "https://music.yandex.by/*",
+    "https://music.yandex.kz/*",
+    "https://music.yandex.uz/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
