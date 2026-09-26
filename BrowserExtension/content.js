@@ -280,6 +280,10 @@
       sendResponse(true); // фоновый скрипт проверяет, что во вкладке уже есть рабочий экземпляр
       return;
     }
+    if (message.type === 'report') {
+      report(true); // фоновый скрипт только что подключился к виджету — прислать состояние сразу
+      return;
+    }
     if (message.type !== 'command') return;
     try {
       if (message.command === 'seek') {

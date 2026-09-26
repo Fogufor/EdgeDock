@@ -230,6 +230,10 @@ public static class Native
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     public static extern IntPtr SHGetFileInfo(string path, uint attributes, ref SHFILEINFO info, uint size, uint flags);
 
+    /// <summary>Значок из ресурсов exe/dll/ico по номеру (отрицательный — по идентификатору ресурса).</summary>
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    public static extern uint ExtractIconEx(string file, int index, IntPtr[]? large, IntPtr[]? small, uint count);
+
     // ----- Клавиатура -----
     // Окно дока не получает фокус, поэтому состояние клавиш WPF не видит — спрашиваем систему напрямую.
     [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);

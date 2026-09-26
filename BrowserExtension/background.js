@@ -19,6 +19,9 @@ const MUSIC_TABS = [                        // те же адреса, что в
   'https://music.yandex.uz/*',
 ];
 
+const WAKE_ALARM = 'edgedock-wake';
+const KEEPALIVE_MS = 20000;                 // пока связь открыта — сигнал раз в 20 с, иначе браузер усыпит скрипт и порвёт связь
+
 const tabs = new Map(); // id вкладки → { state, playedAt }
 let socket = null;
 let lastKey = null;     // что последним ушло виджету (без позиции — её виджет досчитывает сам)
@@ -60,6 +63,35 @@ async function ensureContentScripts() {
 
 ensureContentScripts();
 
+// Вкладка с музыкой может молчать: в фоне и на паузе браузер замедляет и замораживает её таймеры, и будить этот
+// скрипт некому — виджет, запущенный позже браузера, так и не дождался бы подключения. Поэтому раз в 30 с:
+// музыка открыта, а связи с виджетом нет — подключиться. Вкладок с музыкой нет — ничего не делать.
+chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 });
+chrome.alarms.onAlarm.addListener(async alarm => {
+  if (alarm.name !== WAKE_ALARM) return;
+  if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) return;
+  let open = [];
+  try {
+    open = await chrome.tabs.query({ url: MUSIC_TABS });
+  } catch (e) {
+    return;
+  }
+  if (open.length === 0) return;
+  lastAttempt = 0;
+  connect();
+});
+
+// Только что подключились: попросить вкладки прислать состояние сразу — замедленная фоновая вкладка написала бы нескоро.
+async function requestStates() {
+  let open = [];
+  try {
+    open = await chrome.tabs.query({ url: MUSIC_TABS });
+  } catch (e) {
+    return;
+  }
+  for (const tab of open) chrome.tabs.sendMessage(tab.id, { type: 'report' }).catch(() => {});
+}
+
 // Вкладка, которая играет; если ни одна не играет — та, что играла последней.
 function current() {
   let best = null;
@@ -97,10 +129,19 @@ function connect() {
     ws.send(JSON.stringify({ type: 'hello', version: chrome.runtime.getManifest().version }));
     lastKey = null;
     sync(true);
+    requestStates();
+    // Сигнал «жив». Отправку по WebSocket браузер активностью не считает (проверено: связь рвалась каждые ~30 с),
+    // а любой вызов API расширения таймер сна сбрасывает — поэтому ещё и getPlatformInfo.
+    ws.keepalive = setInterval(() => {
+      if (ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({ type: 'ping' }));
+      chrome.runtime.getPlatformInfo().catch(() => {});
+    }, KEEPALIVE_MS);
   };
-  // Виджет не запущен или закрылся — попробуем снова при следующем сообщении от вкладки.
+  // Виджет не запущен или закрылся — попробуем снова при следующем сообщении от вкладки или по будильнику.
   ws.onerror = () => {};
   ws.onclose = () => {
+    clearInterval(ws.keepalive);
     if (socket === ws) socket = null;
   };
   ws.onmessage = event => {

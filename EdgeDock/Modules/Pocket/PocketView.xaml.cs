@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -239,9 +240,29 @@ public partial class PocketView : UserControl
 
     private static void Start(string file, string arguments = "")
     {
+        bool isFile = arguments.Length == 0 && File.Exists(file);
         try
         {
-            Process.Start(new ProcessStartInfo(file) { Arguments = arguments, UseShellExecute = true });
+            var info = new ProcessStartInfo(file) { Arguments = arguments, UseShellExecute = true };
+            if (isFile) info.WorkingDirectory = Path.GetDirectoryName(file); // как из Проводника: программа стартует в папке файла
+            Process.Start(info);
+        }
+        catch (Win32Exception) when (isFile)
+        {
+            // Программа для этого типа не нашлась (например, .docx, а Word удалён) — окно Windows «Выберите приложение».
+            OpenWith(file);
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Не удалось открыть {file}.", ex);
+        }
+    }
+
+    private static void OpenWith(string file)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(file) { UseShellExecute = true, Verb = "openas", WorkingDirectory = Path.GetDirectoryName(file) });
         }
         catch (Exception ex)
         {

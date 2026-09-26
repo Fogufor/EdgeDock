@@ -94,7 +94,8 @@
 ## Удаление
 
 1. Меню трея → «Выход».
-2. Удалите ярлыки `EdgeDock.lnk` из автозапуска (Win+R → `shell:startup`) и из меню «Пуск».
+2. Выключите EdgeDock в «Параметры → Приложения → Автозагрузка» (или удалите запись:
+   `reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v EdgeDock /f`) и удалите ярлык из меню «Пуск».
 3. Удалите папку установки (по умолчанию `%LocalAppData%\Programs\EdgeDock`)
    и папку `%LocalAppData%\EdgeDock` (настройки, полка, закреплённое, кэш, логи).
 4. Если подключали расширение — удалите его на странице `browser://extensions`.

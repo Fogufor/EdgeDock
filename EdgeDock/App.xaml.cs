@@ -74,6 +74,7 @@ public partial class App : Application
 
         _dock = new DockWindow(_settings);
         _dock.Show();
+        Task.Run(BundleCleanup.DeleteOldVersions);
 
         _tray = new TrayIcon(() => _settings.State.Dock.Locked);
         _tray.Command += OnTrayCommand;
