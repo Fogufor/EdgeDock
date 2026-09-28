@@ -81,9 +81,46 @@ public static class Native
     public const int DWMWA_SYSTEMBACKDROP_TYPE = 38;
     public const int DWMWCP_DONOTROUND = 1;
     public const int DWMWCP_ROUND = 2;
+    public const int DWMSBT_NONE = 1;
     public const int DWMSBT_MAINWINDOW = 2;      // Mica
     public const int DWMSBT_TRANSIENTWINDOW = 3; // акрил
     public const int DWMWA_COLOR_NONE = unchecked((int)0xFFFFFFFE);
+
+    // Размытие того, что под окном, без системного оттенка (оформление «Стекло»). Недокументированный,
+    // но давно стабильный вызов: так размыты панель задач и меню «Пуск». В отличие от акрила DWM,
+    // работает и у окна, которое никогда не активно.
+    public const int ACCENT_DISABLED = 0;
+    public const int ACCENT_ENABLE_BLURBEHIND = 3;
+    private const int WCA_ACCENT_POLICY = 19;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ACCENT_POLICY { public int AccentState, AccentFlags, GradientColor, AnimationId; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WINDOWCOMPOSITIONATTRIBDATA { public int Attribute; public IntPtr Data; public int SizeOfData; }
+
+    [DllImport("user32.dll")] private static extern bool SetWindowCompositionAttribute(IntPtr hwnd, ref WINDOWCOMPOSITIONATTRIBDATA data);
+
+    /// <summary>Включить (ACCENT_ENABLE_BLURBEHIND) или снять (ACCENT_DISABLED) размытие под окном.</summary>
+    public static bool SetAccent(IntPtr hwnd, int state)
+    {
+        int size = Marshal.SizeOf<ACCENT_POLICY>();
+        IntPtr accent = Marshal.AllocHGlobal(size);
+        try
+        {
+            Marshal.StructureToPtr(new ACCENT_POLICY { AccentState = state }, accent, false);
+            var data = new WINDOWCOMPOSITIONATTRIBDATA { Attribute = WCA_ACCENT_POLICY, Data = accent, SizeOfData = size };
+            return SetWindowCompositionAttribute(hwnd, ref data);
+        }
+        catch (EntryPointNotFoundException)
+        {
+            return false;
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(accent);
+        }
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct MARGINS { public int Left, Right, Top, Bottom; }
@@ -146,11 +183,12 @@ public static class Native
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)] public static extern bool Shell_NotifyIcon(int message, ref NOTIFYICONDATA data);
 
     // ----- Меню -----
-    public const uint MF_STRING = 0x0000, MF_CHECKED = 0x0008, MF_SEPARATOR = 0x0800;
+    public const uint MF_STRING = 0x0000, MF_CHECKED = 0x0008, MF_POPUP = 0x0010, MF_SEPARATOR = 0x0800, MF_BYCOMMAND = 0x0000;
     public const uint TPM_RIGHTBUTTON = 0x0002, TPM_NONOTIFY = 0x0080, TPM_RETURNCMD = 0x0100;
 
     [DllImport("user32.dll")] public static extern IntPtr CreatePopupMenu();
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern bool AppendMenu(IntPtr menu, uint flags, UIntPtr id, string? text);
+    [DllImport("user32.dll")] public static extern bool CheckMenuRadioItem(IntPtr menu, uint first, uint last, uint check, uint flags);
     [DllImport("user32.dll")] public static extern int TrackPopupMenuEx(IntPtr menu, uint flags, int x, int y, IntPtr hwnd, IntPtr tpm);
     [DllImport("user32.dll")] public static extern bool DestroyMenu(IntPtr menu);
 

@@ -97,7 +97,7 @@ public partial class App : Application
         _settings = new SettingsService();
         _settings.LoadSettings();
         _settings.LoadState();
-        ThemeService.Apply();
+        ThemeService.SetLook(_settings.State.Look);
         Autostart.Sync(_settings.Settings.Dock.Autostart);
 
         _dock = new DockWindow(_settings);
@@ -156,10 +156,26 @@ public partial class App : Application
             case TrayCommand.CheckUpdates:
                 _updates?.CheckNow(manual: true);
                 break;
+            case TrayCommand.LookStandard:
+                SetLook(PanelLook.Standard);
+                break;
+            case TrayCommand.LookDark:
+                SetLook(PanelLook.Dark);
+                break;
+            case TrayCommand.LookGlass:
+                SetLook(PanelLook.Glass);
+                break;
             case TrayCommand.Exit:
                 Shutdown();
                 break;
         }
+    }
+
+    private void SetLook(PanelLook look)
+    {
+        _settings.State.Look = look;
+        _settings.SaveState();
+        ThemeService.SetLook(look);
     }
 
     /// <summary>Открыть файл или папку тем, чем Windows открывает их по умолчанию.</summary>

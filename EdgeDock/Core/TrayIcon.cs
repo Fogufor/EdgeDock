@@ -7,7 +7,7 @@ using System.Windows.Media.Imaging;
 
 namespace EdgeDock.Core;
 
-public enum TrayCommand { ToggleLock = 1, ResetPosition, OpenSettings, OpenLogs, ReloadSettings, Exit, CheckUpdates }
+public enum TrayCommand { ToggleLock = 1, ResetPosition, OpenSettings, OpenLogs, ReloadSettings, Exit, CheckUpdates, LookStandard, LookDark, LookGlass }
 
 /// <summary>
 /// Иконка в трее на чистом Shell_NotifyIcon и системное меню Win32: без WinForms и сторонних пакетов,
@@ -129,6 +129,20 @@ internal sealed class TrayIcon : IDisposable
         IntPtr menu = Native.CreatePopupMenu();
         Item(TrayCommand.ToggleLock, "Закрепить положение", _isLocked());
         Item(TrayCommand.ResetPosition, "Вернуть на место");
+
+        // Оформление: подменю с точкой у выбранного. Уничтожается вместе с главным меню.
+        IntPtr looks = Native.CreatePopupMenu();
+        Native.AppendMenu(looks, Native.MF_STRING, (UIntPtr)(uint)TrayCommand.LookStandard, "Стандартное");
+        Native.AppendMenu(looks, Native.MF_STRING, (UIntPtr)(uint)TrayCommand.LookDark, "Тёмное");
+        Native.AppendMenu(looks, Native.MF_STRING, (UIntPtr)(uint)TrayCommand.LookGlass, "Стекло");
+        var current = ThemeService.Look switch
+        {
+            PanelLook.Dark => TrayCommand.LookDark,
+            PanelLook.Glass => TrayCommand.LookGlass,
+            _ => TrayCommand.LookStandard,
+        };
+        Native.CheckMenuRadioItem(looks, (uint)TrayCommand.LookStandard, (uint)TrayCommand.LookGlass, (uint)current, Native.MF_BYCOMMAND);
+        Native.AppendMenu(menu, Native.MF_POPUP, (UIntPtr)(ulong)looks, "Оформление");
         Separator();
         Item(TrayCommand.OpenSettings, "Открыть настройки");
         Item(TrayCommand.OpenLogs, "Открыть папку логов");

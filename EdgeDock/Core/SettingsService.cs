@@ -66,10 +66,14 @@ public sealed class ShelfEntry
     public bool Owned { get; set; }
 }
 
-/// <summary>state.json. Пишет только виджет: положение, закрепление, содержимое полки.</summary>
+/// <summary>state.json. Пишет только виджет: положение, закрепление, оформление, содержимое полки.</summary>
 public sealed class AppState
 {
     public DockState Dock { get; set; } = new();
+
+    /// <summary>Оформление панели, выбранное в меню трея.</summary>
+    public PanelLook Look { get; set; }
+
     public List<ShelfEntry> Shelf { get; set; } = [];
 }
 

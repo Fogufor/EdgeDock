@@ -1,5 +1,6 @@
 <!--
-  Развёрнутая панель. Фон — системный акрил DWM (его включает код), сама разметка прозрачная.
+  Развёрнутая панель. Фон — системный акрил DWM или, у «Стекла», размытие (его включает код);
+  разметка добавляет поверх только слои оформления.
   Содержимое (Body) проявляется и выезжает через Opacity и RenderTransform.
   Слева — колонка значков вкладок, справа — блок открытой вкладки (модули показываются по одному).
 -->
@@ -63,6 +64,11 @@
     </Window.Resources>
 
     <Grid x:Name="Root" Background="Transparent">
+        <!-- Оформление поверх системного фона: подложка, блик и отсвет акцента (в стандартном — прозрачны). -->
+        <Border Background="{DynamicResource Brush.Panel.Tint}" />
+        <Border Background="{DynamicResource Brush.Panel.Sheen}" />
+        <Border Background="{DynamicResource Brush.Panel.Glow}" />
+
         <Grid x:Name="Body" Opacity="0" VerticalAlignment="Top">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="Slide" />

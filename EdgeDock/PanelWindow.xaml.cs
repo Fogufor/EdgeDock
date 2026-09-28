@@ -96,11 +96,8 @@ public partial class PanelWindow : Window
         Native.SetDwm(_hwnd, Native.DWMWA_WINDOW_CORNER_PREFERENCE, Native.DWMWCP_ROUND);
         ApplyDwmTheme();
 
-        // Акрил. DWM рисует его только у активного окна, а это окно не активируется никогда (WS_EX_NOACTIVATE).
+        // Акрил DWM рисует только у активного окна, а это окно не активируется никогда (WS_EX_NOACTIVATE).
         // Поэтому держим рамку окна в «активном» состоянии сами — см. WM_NCACTIVATE ниже.
-        if (Native.SetDwm(_hwnd, Native.DWMWA_SYSTEMBACKDROP_TYPE, Native.DWMSBT_TRANSIENTWINDOW) != 0)
-            Root.SetResourceReference(System.Windows.Controls.Panel.BackgroundProperty, "Brush.Panel.Fallback");
-
         source.AddHook(WndProc);
         Native.SendMessage(_hwnd, Native.WM_NCACTIVATE, new IntPtr(1), IntPtr.Zero);
     }
@@ -124,6 +121,22 @@ public partial class PanelWindow : Window
         if (_hwnd == IntPtr.Zero) return;
         Native.SetDwm(_hwnd, Native.DWMWA_USE_IMMERSIVE_DARK_MODE, ThemeService.IsDark ? 1 : 0);
         Native.SetDwm(_hwnd, Native.DWMWA_BORDER_COLOR, Native.ToColorRef(ThemeService.Color("Panel.Border")));
+
+        // Системный фон: у «Стекла» — размытие без оттенка (дымку рисует разметка), у остальных — акрил.
+        // Не вышло — сплошной цвет темы.
+        bool backdrop;
+        if (ThemeService.Look == PanelLook.Glass)
+        {
+            Native.SetDwm(_hwnd, Native.DWMWA_SYSTEMBACKDROP_TYPE, Native.DWMSBT_NONE);
+            backdrop = Native.SetAccent(_hwnd, Native.ACCENT_ENABLE_BLURBEHIND);
+        }
+        else
+        {
+            Native.SetAccent(_hwnd, Native.ACCENT_DISABLED);
+            backdrop = Native.SetDwm(_hwnd, Native.DWMWA_SYSTEMBACKDROP_TYPE, Native.DWMSBT_TRANSIENTWINDOW) == 0;
+        }
+        if (backdrop) Root.Background = Brushes.Transparent;
+        else Root.SetResourceReference(System.Windows.Controls.Panel.BackgroundProperty, "Brush.Panel.Fallback");
     }
 
     /// <summary>Нужная высота содержимого (DIP) при заданной ширине.</summary>

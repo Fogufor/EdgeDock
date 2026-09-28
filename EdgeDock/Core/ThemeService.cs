@@ -6,10 +6,22 @@ using Wpf.Ui.Markup;
 
 namespace EdgeDock.Core;
 
+/// <summary>Оформление панели, выбирается в меню трея. Хранится в state.json → "look".</summary>
+public enum PanelLook
+{
+    /// <summary>Системный акрил, светлая или тёмная — как Windows.</summary>
+    Standard,
+    /// <summary>Всегда тёмное: почти непрозрачная графитовая подложка поверх акрила.</summary>
+    Dark,
+    /// <summary>Всегда тёмное дымчатое стекло: размытие без системного оттенка, блик и отсвет акцента.</summary>
+    Glass,
+}
+
 /// <summary>
 /// Следит за светлой/тёмной темой Windows и цветом акцента.
-/// Копирует цвета "Dark.*" или "Light.*" из Tokens.xaml в ресурсы "Brush.*" и "Color.*".
-/// Вызывается при запуске и каждый раз, когда Windows сообщает о смене темы или акцента.
+/// Копирует цвета "Dark.*" или "Light.*" из Tokens.xaml в ресурсы "Brush.*" и "Color.*",
+/// для оформлений «Тёмное» и «Стекло» — поверх ещё "Deep.*" или "Glass.*".
+/// Вызывается при запуске, при смене оформления и каждый раз, когда Windows сообщает о смене темы или акцента.
 /// </summary>
 internal static class ThemeService
 {
@@ -17,8 +29,12 @@ internal static class ThemeService
     private const string AccentKey = @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Accent";
 
     private static bool _applied;
+    private static PanelLook _appliedLook;
 
-    /// <summary>Приложения в тёмной теме.</summary>
+    /// <summary>Выбранное оформление.</summary>
+    public static PanelLook Look { get; private set; }
+
+    /// <summary>Интерфейс в тёмных цветах: тёмная тема Windows или оформление «Тёмное»/«Стекло».</summary>
     public static bool IsDark { get; private set; }
 
     /// <summary>Панель задач (а значит, и трей) в тёмной теме. Может отличаться от <see cref="IsDark"/>.</summary>
@@ -28,18 +44,26 @@ internal static class ThemeService
 
     public static event Action? Changed;
 
+    /// <summary>Сменить оформление: всё перекрашивается на лету.</summary>
+    public static void SetLook(PanelLook look)
+    {
+        Look = look;
+        Apply();
+    }
+
     public static void Apply()
     {
-        bool dark = ReadDword(PersonalizeKey, "AppsUseLightTheme", 1) == 0;
+        bool dark = Look != PanelLook.Standard || ReadDword(PersonalizeKey, "AppsUseLightTheme", 1) == 0;
         bool taskbarDark = ReadDword(PersonalizeKey, "SystemUsesLightTheme", 0) == 0;
         Color[] palette = ReadAccentPalette();
         // Windows 11 рисует акцентные заливки оттенком «Light 2» на тёмном фоне и «Dark 1» на светлом.
         Color accent = palette[dark ? 1 : 4];
 
         // Windows присылает несколько уведомлений на одно изменение — реагируем только на настоящие.
-        if (_applied && dark == IsDark && taskbarDark == IsTaskbarDark && accent == Accent) return;
+        if (_applied && dark == IsDark && taskbarDark == IsTaskbarDark && accent == Accent && Look == _appliedLook) return;
         bool themeChanged = !_applied || dark != IsDark;
         _applied = true;
+        _appliedLook = Look;
         IsDark = dark;
         IsTaskbarDark = taskbarDark;
         Accent = accent;
@@ -47,20 +71,29 @@ internal static class ThemeService
         var resources = Application.Current.Resources;
         var merged = resources.MergedDictionaries;
 
-        // Наши токены.
+        // Наши токены: набор темы, поверх — отличия оформления.
         var tokens = merged.First(d => d.Source?.OriginalString.EndsWith("Tokens.xaml") == true);
-        string prefix = dark ? "Dark." : "Light.";
-        foreach (var key in tokens.Keys.OfType<string>().Where(k => k.StartsWith(prefix)))
-        {
-            if (tokens[key] is not Color color) continue;
-            string name = key[prefix.Length..];
-            resources["Color." + name] = color;
-            resources["Brush." + name] = Frozen(color);
-        }
+        CopyColors(tokens, resources, dark ? "Dark." : "Light.");
+        if (Look == PanelLook.Dark) CopyColors(tokens, resources, "Deep.");
+        if (Look == PanelLook.Glass) CopyColors(tokens, resources, "Glass.");
         resources["Color.Accent"] = accent;
         resources["Brush.Accent"] = Frozen(accent);
         resources["Brush.Accent.Hover"] = Frozen(WithOpacity(accent, (double)tokens["Opacity.AccentHover"]));
         resources["Brush.Accent.Pressed"] = Frozen(WithOpacity(accent, (double)tokens["Opacity.AccentPressed"]));
+
+        // Блик сверху (гаснет к середине панели) и отсвет акцента у верхнего края — только у «Стекла».
+        Color sheen = (Color)resources["Color.Panel.Sheen"];
+        resources["Brush.Panel.Sheen"] = sheen.A == 0 ? Brushes.Transparent : Frozen(new LinearGradientBrush(
+            [new GradientStop(sheen, 0), new GradientStop(WithOpacity(sheen, 0), (double)tokens["Sheen.Fade"])],
+            new Point(0, 0), new Point(0, 1)));
+        resources["Brush.Panel.Glow"] = Look != PanelLook.Glass ? Brushes.Transparent : Frozen(new RadialGradientBrush(
+            [new GradientStop(WithOpacity(accent, (double)tokens["Opacity.GlassGlow"]), 0), new GradientStop(WithOpacity(accent, 0), 1)])
+        {
+            Center = new Point(0.5, 0),
+            GradientOrigin = new Point(0.5, 0),
+            RadiusX = (double)tokens["Glow.RadiusX"],
+            RadiusY = (double)tokens["Glow.RadiusY"],
+        });
 
         // Словарь темы WPF UI меняем сами: её ApplicationThemeManager заодно перекрашивает фон
         // главного окна приложения, а у нас это прозрачная полоска дока.
@@ -99,15 +132,28 @@ internal static class ThemeService
         return Enumerable.Repeat(baseColor, 7).ToArray();
     }
 
+    /// <summary>Цвета набора prefix ("Dark.", "Glass." …) — в ресурсы "Color.*" и "Brush.*".</summary>
+    private static void CopyColors(ResourceDictionary tokens, ResourceDictionary resources, string prefix)
+    {
+        foreach (var key in tokens.Keys.OfType<string>().Where(k => k.StartsWith(prefix)))
+        {
+            if (tokens[key] is not Color color) continue;
+            string name = key[prefix.Length..];
+            resources["Color." + name] = color;
+            resources["Brush." + name] = Frozen(color);
+        }
+    }
+
     private static int ReadDword(string key, string name, int fallback) =>
         Registry.GetValue(key, name, fallback) is int value ? value : fallback;
 
     private static Color WithOpacity(Color color, double opacity) =>
         System.Windows.Media.Color.FromArgb((byte)Math.Round(opacity * 255), color.R, color.G, color.B);
 
-    private static SolidColorBrush Frozen(Color color)
+    private static SolidColorBrush Frozen(Color color) => Frozen(new SolidColorBrush(color));
+
+    private static T Frozen<T>(T brush) where T : Brush
     {
-        var brush = new SolidColorBrush(color);
         brush.Freeze();
         return brush;
     }

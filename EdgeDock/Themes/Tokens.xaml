@@ -4,6 +4,8 @@
   Цвета заданы двумя наборами: "Dark.*" и "Light.*". ThemeService копирует набор текущей
   темы Windows в ресурсы "Brush.*" (и "Color.*"), поэтому разметка всегда пишет
   {DynamicResource Brush.Что-то} и сама следует за сменой темы.
+  Оформления «Тёмное» и «Стекло» берут набор "Dark.*" и поверх него свой: "Deep.*" или "Glass.*"
+  (в них только то, что отличается).
   "Brush.Accent" — системный цвет акцента, его тоже выставляет ThemeService.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -147,6 +149,9 @@
     <Color x:Key="Dark.Panel.Fallback">#F2202020</Color>
     <!-- Обводка панели, её рисует DWM (цвет должен быть непрозрачным). -->
     <Color x:Key="Dark.Panel.Border">#FF404040</Color>
+    <!-- Подложка поверх системного фона и блик сверху: в стандартном оформлении их нет. -->
+    <Color x:Key="Dark.Panel.Tint">#00000000</Color>
+    <Color x:Key="Dark.Panel.Sheen">#00FFFFFF</Color>
     <Color x:Key="Dark.Card.Background">#0DFFFFFF</Color>
     <Color x:Key="Dark.Card.Border">#19000000</Color>
     <Color x:Key="Dark.Subtle.Hover">#0FFFFFFF</Color>
@@ -182,6 +187,8 @@
     <Color x:Key="Light.Pill.Border">#1A000000</Color>
     <Color x:Key="Light.Panel.Fallback">#F2F3F3F3</Color>
     <Color x:Key="Light.Panel.Border">#FFD5D5D5</Color>
+    <Color x:Key="Light.Panel.Tint">#00000000</Color>
+    <Color x:Key="Light.Panel.Sheen">#00FFFFFF</Color>
     <Color x:Key="Light.Card.Background">#B3FFFFFF</Color>
     <Color x:Key="Light.Card.Border">#0F000000</Color>
     <Color x:Key="Light.Subtle.Hover">#09000000</Color>
@@ -198,6 +205,40 @@
     <Color x:Key="Light.Text.OnAccent">#FFFFFFFF</Color>
     <Color x:Key="Light.Text.Critical">#FFC42B1C</Color>
     <Color x:Key="Light.Window.Fallback">#FFF3F3F3</Color>
+
+    <!-- ===== Оформление «Тёмное»: поверх "Dark.*", при любой теме Windows ===== -->
+    <!-- Почти непрозрачная графитовая подложка поверх акрила: текст читается на любом фоне. -->
+    <Color x:Key="Deep.Panel.Tint">#E60C0D0F</Color>
+    <Color x:Key="Deep.Panel.Border">#FF2E3034</Color>
+    <Color x:Key="Deep.Panel.Fallback">#FA0C0D0F</Color>
+    <Color x:Key="Deep.Pill.Rest">#E6141517</Color>
+    <Color x:Key="Deep.Pill.Hover">#F2141517</Color>
+    <Color x:Key="Deep.Pill.Pressed">#E0101113</Color>
+
+    <!-- ===== Оформление «Стекло»: поверх "Dark.*", при любой теме Windows ===== -->
+    <!-- Под панелью системное размытие без своего оттенка; дымку, блик и отсвет акцента рисуем сами. -->
+    <Color x:Key="Glass.Panel.Tint">#7012161D</Color>
+    <Color x:Key="Glass.Panel.Sheen">#1FFFFFFF</Color>
+    <Color x:Key="Glass.Panel.Border">#FF686C73</Color>
+    <Color x:Key="Glass.Card.Background">#14FFFFFF</Color>
+    <Color x:Key="Glass.Card.Border">#2EFFFFFF</Color>
+    <Color x:Key="Glass.Subtle.Hover">#1AFFFFFF</Color>
+    <Color x:Key="Glass.Subtle.Pressed">#10FFFFFF</Color>
+    <Color x:Key="Glass.Button.Rest">#14FFFFFF</Color>
+    <Color x:Key="Glass.Button.Hover">#24FFFFFF</Color>
+    <Color x:Key="Glass.Button.Pressed">#0CFFFFFF</Color>
+    <Color x:Key="Glass.Button.Border">#2EFFFFFF</Color>
+    <Color x:Key="Glass.Thumb.Border">#2EFFFFFF</Color>
+    <Color x:Key="Glass.Pill.Rest">#9912161D</Color>
+    <Color x:Key="Glass.Pill.Hover">#B312161D</Color>
+    <Color x:Key="Glass.Pill.Pressed">#8C12161D</Color>
+    <Color x:Key="Glass.Pill.Border">#40FFFFFF</Color>
+    <!-- Отсвет акцента у верхнего края стекла: насколько заметен и докуда доходит (доли ширины и высоты панели). -->
+    <sys:Double x:Key="Opacity.GlassGlow">0.22</sys:Double>
+    <sys:Double x:Key="Glow.RadiusX">0.6</sys:Double>
+    <sys:Double x:Key="Glow.RadiusY">0.5</sys:Double>
+    <!-- Блик сверху гаснет к этой доле высоты панели. -->
+    <sys:Double x:Key="Sheen.Fade">0.5</sys:Double>
 
     <!-- ===== Цвета иконки в трее (следуют теме панели задач, а не теме приложений) ===== -->
     <Color x:Key="Tray.Glyph.OnDark">#FFFFFFFF</Color>
