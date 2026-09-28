@@ -13,6 +13,9 @@ public sealed class DockSettings
     public int ExpandDelayMs { get; set; } = 300;
     public int CollapseDelayMs { get; set; } = 500;
     public bool Autostart { get; set; } = true;
+
+    /// <summary>Сам проверять и ставить обновления с GitHub (через 2 минуты после запуска).</summary>
+    public bool AutoUpdate { get; set; } = true;
 }
 
 /// <summary>settings.json → "pocket".</summary>

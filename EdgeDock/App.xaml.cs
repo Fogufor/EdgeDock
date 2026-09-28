@@ -18,6 +18,7 @@ public partial class App : Application
     private TrayIcon? _tray;
     private FullscreenWatcher? _fullscreen;
     private HealthCheck? _health;
+    private UpdateService? _updates;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -40,6 +41,23 @@ public partial class App : Application
         // Программная отрисовка: интерфейс крошечный и почти всегда неподвижен, а без Direct3D процесс занимает
         // в разы меньше памяти (≈12 МБ вместо ≈60 МБ в Диспетчере задач). Прозрачность и акрил DWM не страдают.
         RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
+
+        // Тихое обновление: этот exe скачал работающий виджет (см. Updater) — поставить себя и закрыться.
+        if (e.Args.Contains(Updater.UpdateArgument, StringComparer.OrdinalIgnoreCase))
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    Installer.Update();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("Обновление: не удалось установить новую версию.", ex);
+                }
+            }).ContinueWith(_ => Dispatcher.BeginInvoke(() => Shutdown()));
+            return;
+        }
 
         // Скачанный exe, запущенный не из папки установки, — это установка (или обновление).
         if (Installer.ShouldShowSetup(e.Args))
@@ -81,6 +99,9 @@ public partial class App : Application
 
         _health = new HealthCheck();
 
+        _updates = new UpdateService(() => _dock.IsQuiet, (title, text) => _tray?.ShowNotice(title, text));
+        if (_settings.Settings.Dock.AutoUpdate) _updates.ScheduleFirstCheck();
+
         _fullscreen = new FullscreenWatcher(() => _dock.CurrentMonitor);
         _fullscreen.Changed += OnFullscreenChanged;
         _dock.Moved += () => _fullscreen?.Check();
@@ -119,6 +140,9 @@ public partial class App : Application
                     Autostart.Sync(_settings.Settings.Dock.Autostart);
                 }
                 break;
+            case TrayCommand.CheckUpdates:
+                _updates?.CheckNow(manual: true);
+                break;
             case TrayCommand.Exit:
                 Shutdown();
                 break;
@@ -151,6 +175,7 @@ public partial class App : Application
         _tray?.Dispose();
         _fullscreen?.Dispose();
         _health?.Dispose();
+        _updates?.Dispose();
         _exitWait?.Unregister(null);
         _exitSignal?.Dispose();
         _singleInstance?.ReleaseMutex();

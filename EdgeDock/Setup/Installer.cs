@@ -95,6 +95,15 @@ internal static class Installer
     }
 
     /// <summary>Запущенный виджет держит свой exe: просим его закрыться, старую версию без сигнала — закрываем принудительно.</summary>
+    /// <summary>Тихое обновление (exe запустил виджет с --update): в ту же папку, с теми же галочками.</summary>
+    public static void Update()
+    {
+        string folder = InstalledFolder() ?? throw new InvalidOperationException("EdgeDock не установлен — обновлять нечего.");
+        var settings = new SettingsService();
+        settings.LoadSettings();
+        Install(folder, settings.Settings.Dock.Autostart, startMenu: File.Exists(StartMenuShortcut));
+    }
+
     private static void StopRunningWidget()
     {
         if (EventWaitHandle.TryOpenExisting(ExitSignalName, out var signal))

@@ -7,7 +7,7 @@ using System.Windows.Media.Imaging;
 
 namespace EdgeDock.Core;
 
-public enum TrayCommand { ToggleLock = 1, ResetPosition, OpenSettings, OpenLogs, ReloadSettings, Exit }
+public enum TrayCommand { ToggleLock = 1, ResetPosition, OpenSettings, OpenLogs, ReloadSettings, Exit, CheckUpdates }
 
 /// <summary>
 /// Иконка в трее на чистом Shell_NotifyIcon и системное меню Win32: без WinForms и сторонних пакетов,
@@ -79,6 +79,16 @@ internal sealed class TrayIcon : IDisposable
         try { Native.FlushMenuThemes(); } catch (EntryPointNotFoundException) { }
     }
 
+    /// <summary>Уведомление Windows от значка в трее (например, об обновлении).</summary>
+    public void ShowNotice(string title, string text)
+    {
+        var data = NewData(Native.NIF_INFO);
+        data.szInfoTitle = title;
+        data.szInfo = text;
+        data.dwInfoFlags = Native.NIIF_INFO;
+        Native.Shell_NotifyIcon(Native.NIM_MODIFY, ref data);
+    }
+
     private Native.NOTIFYICONDATA NewData(int flags) => new()
     {
         cbSize = Marshal.SizeOf<Native.NOTIFYICONDATA>(),
@@ -123,6 +133,7 @@ internal sealed class TrayIcon : IDisposable
         Item(TrayCommand.OpenSettings, "Открыть настройки");
         Item(TrayCommand.OpenLogs, "Открыть папку логов");
         Item(TrayCommand.ReloadSettings, "Перезагрузить настройки");
+        Item(TrayCommand.CheckUpdates, "Проверить обновления");
         Separator();
         Item(TrayCommand.Exit, "Выход");
 

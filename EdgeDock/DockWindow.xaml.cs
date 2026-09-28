@@ -98,6 +98,9 @@ public partial class DockWindow : Window
         UpdateAttention();
     }
 
+    /// <summary>Док никому не нужен прямо сейчас: панель свернута, ничего не на весь экран, его не тянут — можно перезапуститься.</summary>
+    public bool IsQuiet => !_expanded && !_fullscreen && !_dragging && !_pressed;
+
     /// <summary>Монитор (HMONITOR), на котором сейчас стоит док.</summary>
     public IntPtr CurrentMonitor =>
         _hwnd == IntPtr.Zero ? IntPtr.Zero : Native.MonitorFromWindow(_hwnd, Native.MONITOR_DEFAULTTONEAREST);

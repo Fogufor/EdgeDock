@@ -11,6 +11,9 @@ internal static class AppPaths
     public static string SettingsFile { get; } = Path.Combine(Root, "settings.json");
     public static string StateFile { get; } = Path.Combine(Root, "state.json");
 
+    /// <summary>Скачанные обновления (удаляются при следующей проверке).</summary>
+    public static string Updates { get; } = Path.Combine(Root, "update");
+
     /// <summary>Закреплённое: то, что ввёл пользователь. Отдельно от state.json, чтобы сброс состояния его не задел.</summary>
     public static string PinsFile { get; } = Path.Combine(Root, "pins.json");
     public static string Logs { get; } = Path.Combine(Root, "logs");
