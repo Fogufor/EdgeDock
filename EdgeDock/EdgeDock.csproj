@@ -12,7 +12,7 @@
     <!-- Значок «Край экрана»: рисует tools/make-icon.cs. -->
     <ApplicationIcon>Assets\EdgeDock.ico</ApplicationIcon>
     <!-- Версию для релиза подставляет сборка на GitHub (из тега v1.2.3). -->
-    <Version>1.10.0</Version>
+    <Version>1.11.0</Version>
 
     <!-- Виджет работает весь день: без фонового потока сборщика мусора и без папок локализации. -->
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>

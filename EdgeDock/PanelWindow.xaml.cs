@@ -32,6 +32,9 @@ public partial class PanelWindow : Window
     /// <summary>Над панелью тащат файл или картинку — DockWindow открывает «Карман».</summary>
     public event Action? FileDragEntered;
 
+    /// <summary>Нажали кнопку «Оформление» в правом верхнем углу.</summary>
+    public event Action? AppearanceClicked;
+
     /// <summary>Нажали на заголовок и потянули: DockWindow забирает мышь и продолжает перетаскивание.</summary>
     public event Action<Native.POINT>? HeaderDragStarted;
 
@@ -78,6 +81,23 @@ public partial class PanelWindow : Window
     private void OnTabClick(object sender, RoutedEventArgs e)
     {
         if (((FrameworkElement)sender).DataContext is PanelTab tab) TabClicked?.Invoke(tab.Id);
+    }
+
+    private void OnAppearanceClick(object sender, RoutedEventArgs e) => AppearanceClicked?.Invoke();
+
+    /// <summary>Открыт выбор оформления: кнопка в углу подсвечена, как открытая вкладка.</summary>
+    public void SetAppearanceOpen(bool open)
+    {
+        if (open)
+        {
+            AppearanceButton.SetResourceReference(BackgroundProperty, "Brush.Subtle.Hover");
+            AppearanceButton.SetResourceReference(ForegroundProperty, "Brush.Text.Primary");
+        }
+        else
+        {
+            AppearanceButton.ClearValue(BackgroundProperty);
+            AppearanceButton.ClearValue(ForegroundProperty);
+        }
     }
 
     /// <summary>Переставить открытую панель (без анимации) — например, когда выросло содержимое.</summary>

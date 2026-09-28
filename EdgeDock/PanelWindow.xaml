@@ -8,6 +8,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:EdgeDock"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="EdgeDock"
         WindowStyle="None"
         ResizeMode="NoResize"
@@ -24,6 +25,12 @@
         TextOptions.TextFormattingMode="Display">
 
     <Window.Resources>
+        <!-- Маленькая кнопка в полосе заголовка: помещается в неё целиком. -->
+        <Style x:Key="HeaderButton" TargetType="ui:Button" BasedOn="{StaticResource IconButton}">
+            <Setter Property="Width" Value="{StaticResource HeaderButton.Size}" />
+            <Setter Property="Height" Value="{StaticResource HeaderButton.Size}" />
+        </Style>
+
         <!-- Значок вкладки — как пункт навигации Windows 11: заливка при наведении, у открытой ещё и акцентная черта слева. -->
         <Style x:Key="TabButton" TargetType="Button">
             <Setter Property="Focusable" Value="False" />
@@ -89,6 +96,12 @@
                         CornerRadius="{StaticResource Radius.Strip}"
                         Background="{DynamicResource Brush.Handle.Rest}" />
             </Border>
+
+            <!-- «Оформление» в правом верхнем углу, над краем блока. Не внутри заголовка: наведение на кнопку не подсвечивает ручку. -->
+            <ui:Button x:Name="AppearanceButton" Grid.Column="1" Style="{StaticResource HeaderButton}"
+                       HorizontalAlignment="Right" VerticalAlignment="Center" Margin="{StaticResource Margin.Right.S}"
+                       Content="{StaticResource Glyph.Appearance}" ToolTip="Оформление" Click="OnAppearanceClick"
+                       AutomationProperties.Name="Оформление" AutomationProperties.AutomationId="AppearanceButton" />
 
             <!-- Вкладки: по значку на модуль, сверху вниз. -->
             <ItemsControl x:Name="Tabs" Grid.Row="1" Width="{StaticResource Tab.RailWidth}"

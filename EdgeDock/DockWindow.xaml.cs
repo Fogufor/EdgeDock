@@ -29,6 +29,8 @@ public partial class DockWindow : Window
     private readonly Dictionary<IDockModule, FrameworkElement> _views = [];
     private List<PanelTab> _tabs = [];
     private IDockModule? _active;       // модуль открытой вкладки
+    private AppearanceView? _appearance; // выбор оформления: открывается кнопкой в углу вместо блока вкладки
+    private bool _appearanceOpen;       // открыт он, а модуль вкладки спит
     private PixelRect _panelRect;       // где панель сейчас (в том числе пока Show() ещё не сделал её видимой)
 
     private IntPtr _hwnd;
@@ -84,6 +86,7 @@ public partial class DockWindow : Window
         _modules.Clear();
         _views.Clear();
         _active = null;
+        CloseAppearance();
         _panel?.ClearViews();
 
         foreach (string id in _settings.Settings.Modules)
@@ -422,6 +425,7 @@ public partial class DockWindow : Window
         var panel = EnsurePanel();
         _expanded = true;
         SleepModules(false); // на весь экран блоки спали — открытой панели они нужны
+        CloseAppearance();   // панель всегда открывается на вкладке
         _active = _modules.FirstOrDefault(m => m.Id == (tabId ?? _settings.State.Dock.Tab)) ?? _modules.FirstOrDefault();
         if (_active != null)
         {
@@ -446,17 +450,59 @@ public partial class DockWindow : Window
         return view;
     }
 
-    /// <summary>Открыть вкладку в развёрнутой панели: прежний модуль засыпает, новый просыпается, высота — по новому блоку.</summary>
+    /// <summary>
+    /// Открыть вкладку в развёрнутой панели: прежний модуль засыпает, новый просыпается, высота — по новому блоку.
+    /// Из выбора оформления возвращает и на ту же вкладку.
+    /// </summary>
     private void ShowTab(string id)
     {
         var module = _modules.FirstOrDefault(m => m.Id == id);
-        if (!_expanded || module == null || module == _active) return;
-        _active?.OnCollapsed();
+        if (!_expanded || module == null || (module == _active && !_appearanceOpen)) return;
+        if (!_appearanceOpen) _active?.OnCollapsed(); // при открытом оформлении модуль уже спит
+        CloseAppearance();
         _active = module;
         _panel!.ShowView(ViewOf(module), fade: true);
         module.OnExpanded();
         MarkActiveTab();
         ResizePanel();
+    }
+
+    /// <summary>Кнопка «Оформление»: открыть выбор оформления вместо блока вкладки, повторно — вернуться к вкладке.</summary>
+    private void ToggleAppearance()
+    {
+        if (!_expanded || _panel == null) return;
+        if (_appearanceOpen)
+        {
+            if (_active != null) ShowTab(_active.Id);
+            return;
+        }
+
+        _active?.OnCollapsed();
+        _appearanceOpen = true;
+        if (_appearance == null)
+        {
+            _appearance = new AppearanceView();
+            _appearance.LookChosen += SetLook;
+        }
+        _panel.ShowView(_appearance, fade: true);
+        _panel.SetAppearanceOpen(true);
+        foreach (var tab in _tabs) tab.IsActive = false;
+        ResizePanel();
+    }
+
+    private void CloseAppearance()
+    {
+        if (!_appearanceOpen) return;
+        _appearanceOpen = false;
+        _panel?.SetAppearanceOpen(false);
+    }
+
+    /// <summary>Сменить оформление (кнопка в панели или меню трея) и запомнить его в state.json.</summary>
+    public void SetLook(PanelLook look)
+    {
+        _settings.State.Look = look;
+        _settings.SaveState();
+        ThemeService.SetLook(look);
     }
 
     /// <summary>Отметить открытую вкладку и запомнить её в state.json (только если сменилась).</summary>
@@ -492,6 +538,7 @@ public partial class DockWindow : Window
         _panel.SetTabs(_tabs);
         _panel.TabClicked += ShowTab;
         _panel.FileDragEntered += () => ShowTab("pocket");
+        _panel.AppearanceClicked += ToggleAppearance;
         _panel.PointerEntered += () => _collapseTimer.Stop();
         _panel.PointerLeft += () => { if (_expanded) Restart(_collapseTimer); };
         _panel.HeaderDragStarted += OnHeaderDragStarted;
@@ -530,10 +577,11 @@ public partial class DockWindow : Window
         UpdateVisual();
     }
 
-    // Засыпает только открытая вкладка: остальные и так не просыпались. На весь экран — снова спят все.
+    // Засыпает только открытая вкладка: остальные и так не просыпались (при открытом оформлении спит и она).
+    // На весь экран — снова спят все.
     private void NotifyCollapsed()
     {
-        _active?.OnCollapsed();
+        if (!_appearanceOpen) _active?.OnCollapsed();
         if (_fullscreen) SleepModules(true);
     }
 

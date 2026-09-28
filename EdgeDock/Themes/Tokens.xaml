@@ -92,6 +92,22 @@
     <sys:Double x:Key="Tab.RailWidth">44</sys:Double>
     <Thickness x:Key="Margin.TabRail">0,0,0,8</Thickness>
     <Thickness x:Key="Margin.Tab">0,0,0,4</Thickness>
+    <!-- Кнопка «Оформление» в правом верхнем углу панели (в полосе заголовка высотой 24). -->
+    <sys:Double x:Key="HeaderButton.Size">20</sys:Double>
+    <!-- Выбор оформления: карточки с маленьким макетом панели поверх яркого «рабочего стола». -->
+    <sys:Double x:Key="LookPreview.Height">60</sys:Double>
+    <sys:Double x:Key="LookPreview.SunSize">30</sys:Double>
+    <sys:Double x:Key="LookPreview.LineHeight">3</sys:Double>
+    <sys:Double x:Key="LookPreview.LineLong">34</sys:Double>
+    <sys:Double x:Key="LookPreview.LineShort">20</sys:Double>
+    <CornerRadius x:Key="Radius.PreviewLine">1.5</CornerRadius>
+    <Thickness x:Key="Margin.LookList">0,8,-8,0</Thickness>
+    <Thickness x:Key="Margin.LookPreviewPanel">14,10,14,10</Thickness>
+    <Thickness x:Key="Margin.LookPreviewSun">8,4,0,0</Thickness>
+    <Thickness x:Key="Inset.LookPreviewLines">8,0,8,0</Thickness>
+    <Thickness x:Key="Inset.LookFrame">2</Thickness>
+    <Thickness x:Key="Border.LookFrame">2</Thickness>
+    <Thickness x:Key="Margin.Top.XS">0,4,0,0</Thickness>
     <!-- Окно установки. -->
     <sys:Double x:Key="Setup.Width">520</sys:Double>
     <Thickness x:Key="Inset.Setup">24,16,24,24</Thickness>
@@ -132,6 +148,7 @@
     <sys:String x:Key="Glyph.Check">&#xE73E;</sys:String>
     <sys:String x:Key="Glyph.Pictures">&#xE91B;</sys:String>
     <sys:String x:Key="Glyph.Pin">&#xE718;</sys:String>
+    <sys:String x:Key="Glyph.Appearance">&#xE790;</sys:String>
 
     <!-- ===== Цвета: тёмная тема ===== -->
     <Color x:Key="Dark.Text.Primary">#FFFFFFFF</Color>
@@ -239,6 +256,28 @@
     <sys:Double x:Key="Glow.RadiusY">0.5</sys:Double>
     <!-- Блик сверху гаснет к этой доле высоты панели. -->
     <sys:Double x:Key="Sheen.Fade">0.5</sys:Double>
+
+    <!-- ===== Макеты в выборе оформления: одинаковые при любой теме, показывают, как будет выглядеть панель ===== -->
+    <LinearGradientBrush x:Key="Preview.Wallpaper" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF3A5BD9" Offset="0" />
+        <GradientStop Color="#FFE04E8A" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="Preview.Sun" Color="#FFFFC83D" />
+    <!-- «Стандартное» — пополам светлое и тёмное: как Windows. -->
+    <LinearGradientBrush x:Key="Preview.Standard.Panel" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FFF3F3F3" Offset="0" />
+        <GradientStop Color="#FFF3F3F3" Offset="0.5" />
+        <GradientStop Color="#FF202020" Offset="0.5" />
+        <GradientStop Color="#FF202020" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="Preview.Standard.Line" Color="#A0888888" />
+    <SolidColorBrush x:Key="Preview.Standard.Border" Color="#33000000" />
+    <SolidColorBrush x:Key="Preview.Dark.Panel" Color="#F20C0D0F" />
+    <SolidColorBrush x:Key="Preview.Dark.Line" Color="#99FFFFFF" />
+    <SolidColorBrush x:Key="Preview.Dark.Border" Color="#FF2E3034" />
+    <SolidColorBrush x:Key="Preview.Glass.Panel" Color="#6612161D" />
+    <SolidColorBrush x:Key="Preview.Glass.Line" Color="#E6FFFFFF" />
+    <SolidColorBrush x:Key="Preview.Glass.Border" Color="#66FFFFFF" />
 
     <!-- ===== Цвета иконки в трее (следуют теме панели задач, а не теме приложений) ===== -->
     <Color x:Key="Tray.Glyph.OnDark">#FFFFFFFF</Color>
