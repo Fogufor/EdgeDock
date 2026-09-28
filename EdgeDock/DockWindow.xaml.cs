@@ -24,6 +24,7 @@ public partial class DockWindow : Window
     private readonly PlacementService _placement;
     private readonly DispatcherTimer _expandTimer = new();
     private readonly DispatcherTimer _collapseTimer = new();
+    private readonly DispatcherTimer _briefTimer = new() { Interval = TimeSpan.FromSeconds(2.5) };
     private readonly List<IDockModule> _modules = [];
     private readonly Dictionary<IDockModule, FrameworkElement> _views = [];
     private List<PanelTab> _tabs = [];
@@ -59,6 +60,7 @@ public partial class DockWindow : Window
 
         _expandTimer.Tick += (_, _) => { _expandTimer.Stop(); Expand(); };
         _collapseTimer.Tick += (_, _) => OnCollapseTimer();
+        _briefTimer.Tick += (_, _) => { _briefTimer.Stop(); OnCollapseTimer(); };
         ApplySettings();
 
         SourceInitialized += OnSourceInitialized;
@@ -96,6 +98,19 @@ public partial class DockWindow : Window
         _modulesAsleep = false; // новые модули не спят
         if (_fullscreen && !_expanded) SleepModules(true);
         UpdateAttention();
+    }
+
+    /// <summary>
+    /// Виджет запустили ещё раз (ярлык на рабочем столе, «Пуск») — показать панель на пару секунд, чтобы было видно,
+    /// что он уже работает. Мышь на панели — не сворачиваем, дальше как обычно.
+    /// </summary>
+    public void ShowBriefly()
+    {
+        if (_expanded) return;
+        Expand();
+        if (!_expanded) return;
+        _briefTimer.Stop();
+        _briefTimer.Start();
     }
 
     /// <summary>Док никому не нужен прямо сейчас: панель свернута, ничего не на весь экран, его не тянут — можно перезапуститься.</summary>

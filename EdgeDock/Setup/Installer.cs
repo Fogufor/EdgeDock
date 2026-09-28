@@ -28,6 +28,9 @@ internal static class Installer
 
     public static string Version { get; } = typeof(Installer).Assembly.GetName().Version?.ToString(3) ?? "";
 
+    private static string DesktopShortcut =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "EdgeDock.lnk");
+
     private static string StartMenuShortcut =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "EdgeDock.lnk");
 
@@ -72,7 +75,7 @@ internal static class Installer
         Path.GetFullPath(Environment.ExpandEnvironmentVariables(folder.Trim().Trim('"')));
 
     /// <summary>Установить (или обновить) и запустить. Ошибки — исключениями, их показывает окно установки.</summary>
-    public static void Install(string folder, bool autostart, bool startMenu)
+    public static void Install(string folder, bool autostart, bool startMenu, bool desktop)
     {
         Directory.CreateDirectory(folder);
         StopRunningWidget();
@@ -86,6 +89,9 @@ internal static class Installer
 
         if (startMenu) Autostart.CreateShortcut(StartMenuShortcut, target);
         else if (File.Exists(StartMenuShortcut)) File.Delete(StartMenuShortcut);
+
+        if (desktop) Autostart.CreateShortcut(DesktopShortcut, target);
+        else if (File.Exists(DesktopShortcut)) File.Delete(DesktopShortcut);
 
         Directory.CreateDirectory(AppPaths.Root);
         File.WriteAllText(AppPaths.InstallInfo, JsonSerializer.Serialize(new InstallInfo { Folder = folder, Version = Version }, Json));
@@ -101,7 +107,7 @@ internal static class Installer
         string folder = InstalledFolder() ?? throw new InvalidOperationException("EdgeDock не установлен — обновлять нечего.");
         var settings = new SettingsService();
         settings.LoadSettings();
-        Install(folder, settings.Settings.Dock.Autostart, startMenu: File.Exists(StartMenuShortcut));
+        Install(folder, settings.Settings.Dock.Autostart, startMenu: File.Exists(StartMenuShortcut), desktop: File.Exists(DesktopShortcut));
     }
 
     private static void StopRunningWidget()

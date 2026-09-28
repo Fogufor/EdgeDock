@@ -11,8 +11,13 @@ namespace EdgeDock;
 public partial class App : Application
 {
     private Mutex? _singleInstance;
+    /// <summary>Повторный запуск просит работающий виджет показать панель.</summary>
+    private const string ShowSignalName = @"Local\EdgeDock.Show";
+
     private EventWaitHandle? _exitSignal;
     private RegisteredWaitHandle? _exitWait;
+    private EventWaitHandle? _showSignal;
+    private RegisteredWaitHandle? _showWait;
     private SettingsService _settings = null!;
     private DockWindow _dock = null!;
     private TrayIcon? _tray;
@@ -75,6 +80,11 @@ public partial class App : Application
         {
             _singleInstance.Dispose();
             _singleInstance = null;
+            // Уже запущен (например, ярлык открыли ещё раз) — пусть он покажет панель: видно, что виджет работает.
+            if (EventWaitHandle.TryOpenExisting(ShowSignalName, out var show))
+            {
+                using (show) show.Set();
+            }
             Shutdown();
             return;
         }
@@ -92,6 +102,9 @@ public partial class App : Application
 
         _dock = new DockWindow(_settings);
         _dock.Show();
+        _showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, ShowSignalName);
+        _showWait = ThreadPool.RegisterWaitForSingleObject(_showSignal, (_, _) => Dispatcher.BeginInvoke(() => _dock.ShowBriefly()),
+            null, Timeout.Infinite, executeOnlyOnce: false);
         Task.Run(BundleCleanup.DeleteOldVersions);
 
         _tray = new TrayIcon(() => _settings.State.Dock.Locked);
@@ -178,6 +191,8 @@ public partial class App : Application
         _updates?.Dispose();
         _exitWait?.Unregister(null);
         _exitSignal?.Dispose();
+        _showWait?.Unregister(null);
+        _showSignal?.Dispose();
         _singleInstance?.ReleaseMutex();
         _singleInstance?.Dispose();
         base.OnExit(e);

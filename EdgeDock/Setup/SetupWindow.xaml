@@ -37,6 +37,7 @@
 
             <CheckBox x:Name="AutostartBox" Content="Запускать вместе с Windows" IsChecked="True" Margin="{StaticResource Margin.Top.M}" />
             <CheckBox x:Name="StartMenuBox" Content="Ярлык в меню «Пуск»" IsChecked="True" Margin="{StaticResource Margin.Top.S}" />
+            <CheckBox x:Name="DesktopBox" Content="Ярлык на рабочем столе" IsChecked="True" Margin="{StaticResource Margin.Top.S}" />
 
             <TextBlock x:Name="ErrorText" Margin="{StaticResource Margin.Top.M}" TextWrapping="Wrap"
                        Foreground="{DynamicResource Brush.Text.Critical}" Visibility="Collapsed" />

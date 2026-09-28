@@ -48,14 +48,14 @@ public partial class SetupWindow : Window
             return;
         }
 
-        bool autostart = AutostartBox.IsChecked == true, startMenu = StartMenuBox.IsChecked == true;
+        bool autostart = AutostartBox.IsChecked == true, startMenu = StartMenuBox.IsChecked == true, desktop = DesktopBox.IsChecked == true;
         object caption = InstallButton.Content;
         InstallButton.IsEnabled = false;
         InstallButton.Content = "Устанавливаю…";
         try
         {
             // В фоне: остановка запущенного виджета может занять несколько секунд.
-            await Task.Run(() => Installer.Install(folder, autostart, startMenu));
+            await Task.Run(() => Installer.Install(folder, autostart, startMenu, desktop));
             _installedFolder = folder;
             InstallPage.Visibility = Visibility.Collapsed;
             DonePage.Visibility = Visibility.Visible;
