@@ -69,9 +69,28 @@ internal static class DropReader
         {
             if (names[i] is not string name) continue; // папки пропускаем
             string path = UniquePath(name);
-            if (CopyFileContents(com, format, i, path)) result.Add(path);
+            if (!CopyFileContents(com, format, i, path)) continue;
+            MarkFromInternet(path);
+            result.Add(path);
         }
         return result;
+    }
+
+    /// <summary>
+    /// Отметка «файл из интернета» (Mark-of-the-Web), как у скачанного браузером или сохранённого из Outlook.
+    /// Виртуальные файлы приходят из писем и со страниц, а мы пишем их сами — без этой отметки Windows и Office
+    /// не предупредили бы при открытии с полки (SmartScreen, защищённый просмотр, блокировка макросов из интернета).
+    /// </summary>
+    private static void MarkFromInternet(string path)
+    {
+        try
+        {
+            File.WriteAllText(path + ":Zone.Identifier", "[ZoneTransfer]\r\nZoneId=3\r\n");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            Log.Error($"Не удалось отметить файл как полученный из интернета: {path}", ex);
+        }
     }
 
     /// <summary>
